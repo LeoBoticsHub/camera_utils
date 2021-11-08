@@ -5,7 +5,7 @@ import numpy as np
 try:
     import pyzed.sl as sl
 except ImportError:
-    print("pyzed.ml module not found")
+    print("pyzed.sl module not found")
 
 
 
