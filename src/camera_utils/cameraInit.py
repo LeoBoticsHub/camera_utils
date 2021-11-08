@@ -1,9 +1,8 @@
 import pdb
 
 import pyrealsense2 as rs
-#import pyzed.sl as sl
+import pyzed.sl as sl
 import numpy as np
-
 
 class Camera:
 
@@ -25,9 +24,9 @@ class Camera:
 
         print(f"{self.camera_name} initialization")
 
-        if name is "zed":
+        if name == "zed":
             self.initialize_zed()
-        elif name is "intel":
+        elif name == "intel":
             self.initialize_intel()
         else:
             print("Camera DOES NOT exist. Choose one between (zed, intel)")
@@ -36,9 +35,9 @@ class Camera:
         print(f"{self.camera_name} camera configured.\n")
 
     def __del__(self):
-        if self.camera_name is "intel":
+        if self.camera_name == "intel":
             self.pipeline.stop()
-        elif self.camera_name is "zed":
+        elif self.camera_name == "zed":
             self.pipeline.close()
         print("Pipeline closed.")
 
@@ -49,11 +48,11 @@ class Camera:
         init_params = sl.InitParameters()
 
         # set resolution
-        if self.rgb_resolution is "2K":
+        if self.rgb_resolution == "2K":
             init_params.camera_resolution = sl.RESOLUTION.HD2K
             if self.fps > 15:
                 self.fps = 15
-        elif self.rgb_resolution is "HD":
+        elif self.rgb_resolution == "HD":
             init_params.camera_resolution = sl.RESOLUTION.HD720
         else:
             init_params.camera_resolution = sl.RESOLUTION.HD1080
@@ -104,13 +103,13 @@ class Camera:
         return self.fps
 
     def get_rgb(self):
-        if self.camera_name is "intel":
+        if self.camera_name == "intel":
             color_frame = None
             while not color_frame:
                 frames = self.pipeline.wait_for_frames()
                 color_frame = frames.get_color_frame()
 
-        elif self.camera_name is "zed":
+        elif self.camera_name == "zed":
             color_frame = sl.Mat()
             runtime_parameters = sl.RuntimeParameters()
             if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
@@ -120,12 +119,12 @@ class Camera:
         return color_frame
 
     def get_depth(self):
-        if self.camera_name is "intel":
+        if self.camera_name == "intel":
             while not depth_frame:
                 frames = self.pipeline.wait_for_frames()
                 depth_frame = frames.get_depth_frame()
 
-        elif self.camera_name is "zed":
+        elif self.camera_name == "zed":
             depth_frame = sl.Mat()
             runtime_parameters = sl.RuntimeParameters()
             if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
@@ -135,14 +134,14 @@ class Camera:
         return depth_frame
 
     def get_frames(self):
-        if self.camera_name is "intel":
+        if self.camera_name == "intel":
             depth_frame_cam, color_frame_cam = None, None
             while not color_frame_cam or not depth_frame_cam:
                 frames = self.pipeline.wait_for_frames()
                 depth_frame_cam = frames.get_depth_frame()
                 color_frame_cam = frames.get_color_frame()
 
-        elif self.camera_name is "zed":
+        elif self.camera_name == "zed":
             color_frame_cam = sl.Mat()
             depth_frame_cam = sl.Mat()
             runtime_parameters = sl.RuntimeParameters()
@@ -157,11 +156,11 @@ class Camera:
     def set_option(self, option, value):
         option_name = str(option)
         try:
-            if self.camera_name is "intel":
+            if self.camera_name == "intel":
                 sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1]
                 sensor.set_option(option, value)
                 option_name = str(option).replace('option.', '').upper()
-            elif self.camera_name is "zed":
+            elif self.camera_name == "zed":
                 self.pipeline.set_camera_settings(option, value)
                 option_name = str(option).replace('VIDEO_SETTINGS.', '').upper()
             print(f"Option {option_name} changed to value: {value}")
@@ -171,11 +170,11 @@ class Camera:
 
     def get_option(self, option):
         try:
-            if self.camera_name is "intel":
+            if self.camera_name == "intel":
                 sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1]
                 value = sensor.get_option(option)
                 option_name = str(option).replace('option.', '').upper()
-            elif self.camera_name is "zed":
+            elif self.camera_name == "zed":
                 value = self.pipeline.get_camera_settings(option)
                 option_name = str(option).replace('VIDEO_SETTINGS.', '').upper()
             print(f"Option {option_name} value: {value}")
