@@ -1,7 +1,6 @@
 import pdb
 
 import pyrealsense2 as rs
-import pyzed.sl as sl
 import numpy as np
 
 class Camera:
