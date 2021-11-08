@@ -2,6 +2,12 @@ import pdb
 
 import pyrealsense2 as rs
 import numpy as np
+try:
+    import pyzed.sl as sl
+except ImportError:
+    print("pyzed.ml module not found")
+
+
 
 class Camera:
 
