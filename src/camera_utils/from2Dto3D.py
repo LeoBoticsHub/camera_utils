@@ -11,8 +11,8 @@ def compute_centroids_with_point_cloud(rgb, depth, out_mask,intrinsic):
     for j in range(out_mask.shape[0]):
         rgb_new = rgb.copy()
         depth_new = depth.copy()
+
         # extract mask from rgb and depth
-        # pdb.set_trace()
         for i in range(3):
             rgb_new[:, :, i] = np.multiply(rgb[:, :, i], out_mask[j, :, :])
         depth_new = np.multiply(depth_new, out_mask[j, :, :])
@@ -23,13 +23,31 @@ def compute_centroids_with_point_cloud(rgb, depth, out_mask,intrinsic):
         rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb_new, depth_new)
         pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
 
-        # pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
-        # o3d.visualization.draw_geometries([pcd])
-        #print(pcd.get_center())
-
         center = pcd.get_center()
-        #pdb.set_trace()
-        points_and_angles.append([center, 0.5])
+
+        gray_cluster = cv2.cvtColor(rgb_new, cv2.COLOR_BGR2GRAY)
+        cnt, _ = cv2.findContours(gray_cluster, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+        x_sum, y_sum = 0, 0
+
+        for cont in cnt[0]:
+            x_sum += cont[0, 0]
+            y_sum += cont[0, 1]
+
+        mu = [int(x_sum / cnt[0].shape[0]), int(y_sum / cnt[0].shape[0])]
+        newX = (mu[0] / rgb.shape[0]) * depth.shape[0]
+        newY = (mu[1] / rgb.shape[1]) * depth.shape[1]
+        mu = [round(newX), round(newY)]
+
+        Ixx, Ixy, Iyy = 0, 0, 0
+        for cont in cnt[0]:
+            Ixx += pow(cont[0, 0] - mu[0], 2)
+            Ixy += (cont[0, 0] - mu[0]) * (cont[0, 1] - mu[1])
+            Iyy += pow(cont[0, 1] - mu[1], 2)
+
+        alpha = (0.5 * math.atan2((2 * Ixy), (Ixx - Iyy)))
+
+        points_and_angles.append([center, alpha])
 
     return points_and_angles
 
