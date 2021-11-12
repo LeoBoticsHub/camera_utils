@@ -1,6 +1,7 @@
 import open3d as o3d
 import cv2
 import numpy as np
+import math
 
 def compute_centroids_with_point_cloud(rgb, depth, out_mask,intrinsic):
     # convert image to np array
@@ -17,7 +18,7 @@ def compute_centroids_with_point_cloud(rgb, depth, out_mask,intrinsic):
             rgb_new[:, :, i] = np.multiply(rgb[:, :, i], out_mask[j, :, :])
         depth_new = np.multiply(depth_new, out_mask[j, :, :])
 
-#        compute angle
+#       compute angle
 
         gray_cluster = cv2.cvtColor(rgb_new, cv2.COLOR_BGR2GRAY)
         cnt, _ = cv2.findContours(gray_cluster, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -41,7 +42,7 @@ def compute_centroids_with_point_cloud(rgb, depth, out_mask,intrinsic):
 
         alpha = (0.5 * math.atan2((2 * Ixy), (Ixx - Iyy)))
 
-#        compute center
+#       compute center
 
         rgb_new = o3d.geometry.Image(rgb_new)
         depth_new = o3d.geometry.Image(depth_new)
