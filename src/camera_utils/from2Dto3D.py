@@ -17,13 +17,7 @@ def compute_centroids_with_point_cloud(rgb, depth, out_mask,intrinsic):
             rgb_new[:, :, i] = np.multiply(rgb[:, :, i], out_mask[j, :, :])
         depth_new = np.multiply(depth_new, out_mask[j, :, :])
 
-        rgb_new = o3d.geometry.Image(rgb_new)
-        depth_new = o3d.geometry.Image(depth_new)
-
-        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb_new, depth_new)
-        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
-
-        center = pcd.get_center()
+#        compute angle
 
         gray_cluster = cv2.cvtColor(rgb_new, cv2.COLOR_BGR2GRAY)
         cnt, _ = cv2.findContours(gray_cluster, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -46,6 +40,16 @@ def compute_centroids_with_point_cloud(rgb, depth, out_mask,intrinsic):
             Iyy += pow(cont[0, 1] - mu[1], 2)
 
         alpha = (0.5 * math.atan2((2 * Ixy), (Ixx - Iyy)))
+
+#        compute center
+
+        rgb_new = o3d.geometry.Image(rgb_new)
+        depth_new = o3d.geometry.Image(depth_new)
+
+        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb_new, depth_new)
+        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
+
+        center = pcd.get_center()
 
         points_and_angles.append([center, alpha])
 
