@@ -3,107 +3,107 @@ import cv2
 import numpy as np
 import math
 
-def compute_centroids_with_point_cloud(rgb, depth, out_mask,intrinsic):
+
+def extract_contours(rgb):
+    gray_cluster = cv2.cvtColor(rgb, cv2.COLOR_BGR2GRAY)
+    cnt, _ = cv2.findContours(gray_cluster, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+    return cnt
+
+
+def comute_mu(rgb, depth, cnt):
+
+    x_sum, y_sum = 0, 0
+    for cont in cnt[0]:
+        x_sum += cont[0, 0]
+        y_sum += cont[0, 1]
+
+    mu = [int(x_sum / cnt[0].shape[0]), int(y_sum / cnt[0].shape[0])]
+    newX = (mu[0] / rgb.shape[0]) * depth.shape[0]
+    newY = (mu[1] / rgb.shape[1]) * depth.shape[1]
+    mu = [round(newX), round(newY)]
+
+    return mu
+
+
+def compute_angle(mu, cnt):
+    Ixx, Ixy, Iyy = 0, 0, 0
+    for cont in cnt[0]:
+        Ixx += pow(cont[0, 0] - mu[0], 2)
+        Ixy += (cont[0, 0] - mu[0]) * (cont[0, 1] - mu[1])
+        Iyy += pow(cont[0, 1] - mu[1], 2)
+
+    alpha = (0.5 * math.atan2((2 * Ixy), (Ixx - Iyy)))
+
+    return alpha
+
+
+def compute_angle_from_rgb(rgb, depth):
+    cnt = extract_contours(rgb)
+    mu = comute_mu(rgb, depth, cnt)
+    alpha = compute_angle(mu, cnt)
+
+    return alpha
+
+
+def compute_centroids(rgb, depth, mask, intrinsics, use_pcd = True):
+    focal_length = [intrinsics['fx'], intrinsics['fy']]
+    principal_point = [intrinsics['px'], intrinsics['py']]
+
     # convert image to np array
     rgb = np.asarray(rgb)
     depth = np.asarray(depth, np.uint16)
-    out_mask = np.asarray(out_mask, np.uint8)
+    mask = np.asarray(mask, np.uint8)
     points_and_angles = []
-    for j in range(out_mask.shape[0]):
-        rgb_new = rgb.copy()
-        depth_new = depth.copy()
 
-        # extract mask from rgb and depth
-        for i in range(3):
-            rgb_new[:, :, i] = np.multiply(rgb[:, :, i], out_mask[j, :, :])
-        depth_new = np.multiply(depth_new, out_mask[j, :, :])
+    if use_pcd:
 
-#       compute angle
+        intrinsic = o3d.camera.PinholeCameraIntrinsic()
+        intrinsic.set_intrinsics(depth.shape[1], depth.shape[0], focal_length[0], focal_length[1], principal_point[0], principal_point[1])
 
-        gray_cluster = cv2.cvtColor(rgb_new, cv2.COLOR_BGR2GRAY)
-        cnt, _ = cv2.findContours(gray_cluster, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        for j in range(mask.shape[0]):
+            rgb_new = rgb.copy()
+            depth_new = depth.copy()
+            # extract mask from rgb and depth
+            for i in range(3):
+                rgb_new[:, :, i] = np.multiply(rgb[:, :, i], mask[j, :, :])
+            depth_new = np.multiply(depth_new, mask[j, :, :])
 
-        x_sum, y_sum = 0, 0
+            # compute angle
+            alpha = compute_angle_from_rgb(rgb_new, depth_new)
 
-        for cont in cnt[0]:
-            x_sum += cont[0, 0]
-            y_sum += cont[0, 1]
+            # compute center
+            rgb_new = o3d.geometry.Image(rgb_new)
+            depth_new = o3d.geometry.Image(depth_new)
 
-        mu = [int(x_sum / cnt[0].shape[0]), int(y_sum / cnt[0].shape[0])]
-        newX = (mu[0] / rgb.shape[0]) * depth.shape[0]
-        newY = (mu[1] / rgb.shape[1]) * depth.shape[1]
-        mu = [round(newX), round(newY)]
+            rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb_new, depth_new)
+            pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
 
-        Ixx, Ixy, Iyy = 0, 0, 0
-        for cont in cnt[0]:
-            Ixx += pow(cont[0, 0] - mu[0], 2)
-            Ixy += (cont[0, 0] - mu[0]) * (cont[0, 1] - mu[1])
-            Iyy += pow(cont[0, 1] - mu[1], 2)
+            center = pcd.get_center()
 
-        alpha = (0.5 * math.atan2((2 * Ixy), (Ixx - Iyy)))
+            points_and_angles.append([center, alpha])
 
-#       compute center
+    else:
 
-        rgb_new = o3d.geometry.Image(rgb_new)
-        depth_new = o3d.geometry.Image(depth_new)
+        for j in range(mask.shape[0]):
+            rgb_new = rgb.copy()
+            # extract mask from rgb
+            for i in range(3):
+                rgb_new[:, :, i] = np.multiply(rgb[:, :, i], mask[j, :, :])
 
-        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb_new, depth_new)
-        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
+            cnt = extract_contours(rgb_new)
+            mu = comute_mu(rgb_new, depth, cnt)
 
-        center = pcd.get_center()
+            # compute 3D spatial coordinates with respect to the camera reference frame
+            z = depth[mu[1], mu[0]] * 0.001
+            x = ((mu[0] - principal_point[0]) * z) / focal_length[0]
+            y = ((mu[1] - principal_point[1]) * z) / focal_length[1]
 
-        points_and_angles.append([center, alpha])
+            center = [x, y, z]
 
-    return points_and_angles
+            alpha = compute_angle(mu, cnt)
 
+            # append the centroid and the angle of the considered mask in the list.
+            points_and_angles.append([center, alpha])
 
-def compute_centroids(rgb, depth, out_mask):
-    # convert image to np array
-    rgb = np.asarray(rgb)
-    depth = np.asarray(depth, np.uint16)
-    out_mask = np.asarray(out_mask, np.uint8)
-    points_and_angles = []
-    for j in range(out_mask.shape[0]):
-        rgb_new = rgb.copy()
-        # extract mask from rgb and depth
-        # pdb.set_trace()
-        for i in range(3):
-            rgb_new[:, :, i] = np.multiply(rgb[:, :, i], out_mask[j, :, :])
-        # depth_new = np.multiply(depth, out_mask[j, :, :])
-
-        # convert masked rgb to gray image
-        gray_cluster = cv2.cvtColor(rgb_new, cv2.COLOR_BGR2GRAY)
-        # compute cluter contours
-        cnt, _ = cv2.findContours(gray_cluster, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-
-        # compute image centroid mu = [x_mean, y_mean]
-        x_sum, y_sum = 0, 0
-
-        for cont in cnt[0]:
-            x_sum += cont[0, 0]
-            y_sum += cont[0, 1]
-
-        mu = [int(x_sum / cnt[0].shape[0]), int(y_sum / cnt[0].shape[0])]
-        newX = (mu[0] / rgb.shape[0]) * depth.shape[0]
-        newY = (mu[1] / rgb.shape[1]) * depth.shape[1]
-        mu = [round(newX), round(newY)]
-        # pdb.set_trace()
-        # compute 3D spatial coordinates with respect to the camera reference frame
-        z = depth[mu[1], mu[0]] * 0.001
-        x = ((mu[0] - principal_point[0]) * z) / focal_length[0]
-        y = ((mu[1] - principal_point[1]) * z) / focal_length[1]
-
-        center = [x, y, z]
-
-        # compute cluster angle with respect to x axis using its "inertial" matrix
-        Ixx, Ixy, Iyy = 0, 0, 0
-        for cont in cnt[0]:
-            Ixx += pow(cont[0, 0] - mu[0], 2)
-            Ixy += (cont[0, 0] - mu[0]) * (cont[0, 1] - mu[1])
-            Iyy += pow(cont[0, 1] - mu[1], 2)
-
-        alpha = (0.5 * math.atan2((2 * Ixy), (Ixx - Iyy)))
-
-        # append the centroid and the angle of the considered mask in the list.
-        points_and_angles.append([center, alpha])
     return points_and_angles
