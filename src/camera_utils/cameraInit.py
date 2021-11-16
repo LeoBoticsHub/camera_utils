@@ -1,5 +1,3 @@
-import pdb
-
 import pyrealsense2 as rs
 import numpy as np
 try:
@@ -27,7 +25,7 @@ class Camera:
         self.fps = fps
         self.serial_number = serial_number
 
-        print(f"{self.camera_name} initialization")
+        print("%s initialization" % self.camera_name)
 
         if name == "zed":
             self.initialize_zed()
@@ -37,7 +35,7 @@ class Camera:
             print("Camera DOES NOT exist. Choose one between (zed, intel)")
             exit(1)
 
-        print(f"{self.camera_name} camera configured.\n")
+        print("%s camera configured.\n" % self.camera_name)
 
     def __del__(self):
         if self.camera_name == "intel":
@@ -168,10 +166,10 @@ class Camera:
             elif self.camera_name == "zed":
                 self.pipeline.set_camera_settings(option, value)
                 option_name = str(option).replace('VIDEO_SETTINGS.', '').upper()
-            print(f"Option {option_name} changed to value: {value}")
+            print("Option %s changed to value: %d" % (option_name, int(value)))
 
         except TypeError as ex:
-            print(f"\033[0;33;40m Exception ({type(ex).__name__}): the option {option_name} has NOT been set.")
+            print("\033[0;33;40m Exception (%s): the option %s has NOT been set." % (type(ex).__name__, option_name))
 
     def get_option(self, option):
         try:
@@ -182,7 +180,7 @@ class Camera:
             elif self.camera_name == "zed":
                 value = self.pipeline.get_camera_settings(option)
                 option_name = str(option).replace('VIDEO_SETTINGS.', '').upper()
-            print(f"Option {option_name} value: {value}")
+            print("Option %s value: %d" % (option_name, int(value)))
 
         except TypeError as ex:
-            print(f"\033[0;33;40m Exception ({type(ex).__name__}): the option {option_name} does NOT exist.")
+            print("\033[0;33;40m Exception (%s): the option %s has NOT been set." % (type(ex).__name__, option_name))

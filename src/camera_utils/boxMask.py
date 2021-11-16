@@ -12,8 +12,3 @@ def getBoxMask(color_frame):
     mask = cv2.dilate(mask, None, iterations=4)
 
     return mask
-
-
-
-
-
