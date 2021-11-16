@@ -36,20 +36,24 @@ def compute_dimensions(rgb, depth, mask, intrinsics, cam2plane_distance):
     pcd.rotate([[math.cos(angle), -math.sin(angle), 0], [math.sin(angle), math.cos(angle), 0], [0, 0, 1]])
 
     plane_model, inliers = pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
-    # [a, b, c, d] = plane_model
-    # print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
 
-    pcd = pcd.select_by_index(inliers)
-    # pcd.paint_uniform_color([1.0, 0, 0])
-    # outlier_cloud = pcd.select_by_index(inliers, invert=True)
-    # o3d.visualization.draw_geometries([pcd])
+    if o3d.__version__ == '0.9.0.0':
+        inlier_cloud = pcd.select_down_sample(inliers)
+        # outlier_cloud = pcd.select_down_sample(inliers, invert=True)
+    else:
+        inlier_cloud = pcd.select_by_index(inliers)
+        # outlier_cloud = pcd.select_by_index(inliers, invert=True)
 
-    max_x = np.max(np.asarray(pcd.points)[:, 0])
-    min_x = np.min(np.asarray(pcd.points)[:, 0])
-    max_y = np.max(np.asarray(pcd.points)[:, 1])
-    min_y = np.min(np.asarray(pcd.points)[:, 1])
-    # max_z = np.max(np.asarray(pcd.points)[:, 2])
-    min_z = np.min(np.asarray(pcd.points)[:, 2])
+    # inlier_cloud.paint_uniform_color([1.0, 0, 0])
+    # o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud])
+    # o3d.visualization.draw_geometries([inlier_cloud])
+
+    max_x = np.max(np.asarray(inlier_cloud.points)[:, 0])
+    min_x = np.min(np.asarray(inlier_cloud.points)[:, 0])
+    max_y = np.max(np.asarray(inlier_cloud.points)[:, 1])
+    min_y = np.min(np.asarray(inlier_cloud.points)[:, 1])
+    # max_z = np.max(np.asarray(inlier_cloud.points)[:, 2])
+    min_z = np.min(np.asarray(inlier_cloud.points)[:, 2])
 
     dimX = max_x - min_x
     dimY = max_y - min_y

@@ -1,3 +1,5 @@
+import pdb
+
 import open3d as o3d
 import cv2
 import numpy as np
@@ -11,7 +13,7 @@ def extract_contours(rgb):
     return cnt
 
 
-def comute_mu(rgb, depth, cnt):
+def compute_mu(rgb, depth, cnt):
 
     x_sum, y_sum = 0, 0
     for cont in cnt[0]:
@@ -19,9 +21,10 @@ def comute_mu(rgb, depth, cnt):
         y_sum += cont[0, 1]
 
     mu = [int(x_sum / cnt[0].shape[0]), int(y_sum / cnt[0].shape[0])]
-    newX = (mu[0] / rgb.shape[0]) * depth.shape[0]
-    newY = (mu[1] / rgb.shape[1]) * depth.shape[1]
+    newX = (float(mu[0]) / rgb.shape[0]) * depth.shape[0]
+    newY = (float(mu[1]) / rgb.shape[1]) * depth.shape[1]
     mu = [round(newX), round(newY)]
+
 
     return mu
 
@@ -40,7 +43,7 @@ def compute_angle(mu, cnt):
 
 def compute_angle_from_rgb(rgb, depth):
     cnt = extract_contours(rgb)
-    mu = comute_mu(rgb, depth, cnt)
+    mu = compute_mu(rgb, depth, cnt)
     alpha = compute_angle(mu, cnt)
 
     return alpha
@@ -92,7 +95,7 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd = True):
                 rgb_new[:, :, i] = np.multiply(rgb[:, :, i], mask[j, :, :])
 
             cnt = extract_contours(rgb_new)
-            mu = comute_mu(rgb_new, depth, cnt)
+            mu = compute_mu(rgb_new, depth, cnt)
 
             # compute 3D spatial coordinates with respect to the camera reference frame
             z = depth[mu[1], mu[0]] * 0.001
