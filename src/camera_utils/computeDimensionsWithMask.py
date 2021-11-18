@@ -3,7 +3,7 @@ import pdb
 import numpy as np
 import open3d as o3d
 import math
-from from2Dto3D import compute_angle_from_rgb
+from camera_utils.from2Dto3D import compute_angle_from_rgb
 
 
 def compute_dimensions_with_angle(rgb, depth, mask, intrinsics, cam2plane_distance):
@@ -84,8 +84,6 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
         rgb[:, :, i] = np.multiply(rgb[:, :, i], mask)
     # extract mask from depth
     depth = np.multiply(depth, mask)
-
-    angle = compute_angle_from_rgb(rgb, depth)
 
     depth = o3d.geometry.Image(depth)
     rgb = o3d.geometry.Image(rgb)
