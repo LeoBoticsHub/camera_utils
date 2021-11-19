@@ -93,8 +93,12 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
     pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
     # pcd = pcd.voxel_down_sample(voxel_size=0.005)
 
-    plane_model, inliers = pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
-
+    #plane_model, inliers = pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
+    try:
+    	plane_model, inliers = pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
+    except:
+    	print('Error during plane generation')
+    	return [0,0,0]
     if o3d.__version__ == '0.9.0.0':
         inlier_cloud = pcd.select_down_sample(inliers)
         # outlier_cloud = pcd.select_down_sample(inliers, invert=True)
