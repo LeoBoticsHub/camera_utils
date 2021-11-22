@@ -57,6 +57,9 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd = True):
     rgb = np.asarray(rgb)
     depth = np.asarray(depth, np.uint16)
     mask = np.asarray(mask, np.uint8)
+    if mask.shape[0] == 0:
+        points_and_angles = [[0, 0, 0], 0]
+        return points_and_angles
     points_and_angles = []
 
     if use_pcd:
