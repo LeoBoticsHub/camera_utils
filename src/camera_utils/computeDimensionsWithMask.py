@@ -6,7 +6,6 @@ import math
 from camera_utils.from2Dto3D import compute_angle_from_rgb
 import cv2
 
-
 def compute_dimensions_with_angle(rgb, depth, mask, intrinsics, cam2plane_distance):
 
     # set intrinsics for open3d
@@ -58,12 +57,12 @@ def compute_dimensions_with_angle(rgb, depth, mask, intrinsics, cam2plane_distan
     # max_z = np.max(np.asarray(inlier_cloud.points)[:, 2])
     min_z = np.min(np.asarray(inlier_cloud.points)[:, 2])
 
-    dimX = max_x - min_x
-    dimY = max_y - min_y
-    # dimZ = max_z - min_z
-    dimZ = cam2plane_distance - min_z
+    dim_x = max_x - min_x
+    dim_y = max_y - min_y
+    # dim_z = max_z - min_z
+    dim_z = cam2plane_distance - min_z
 
-    dim = [dimX, dimY, dimZ]
+    dim = [dim_x, dim_y, dim_z]
 
     return dim
 
@@ -75,6 +74,21 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
     height = min(depth.shape[0], depth.shape[1])
     intrinsic = o3d.camera.PinholeCameraIntrinsic()
     intrinsic.set_intrinsics(width, height, intrinsics['fx'], intrinsics['fy'], intrinsics['px'], intrinsics['py'])
+
+    # TODO: control if there is more than one cnt and in case take the one bigger
+    cnt, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    if len(cnt)>1:
+        dim = [0, 0, 0]
+        return dim
+    rect = cv2.minAreaRect(cnt[0])
+    box = cv2.boxPoints(rect)
+    box = np.int0(box)  # turn into ints
+    cv2.fillPoly(mask, pts=[box], color=(255, 255, 255))
+    mask = np.array(mask, dtype=np.uint8)
+
+    cv2.namedWindow('Mask', cv2.WINDOW_NORMAL)
+    cv2.imshow('Mask', mask)
+
 
     # binarize mask
     mask[mask > 254] = 1
@@ -95,12 +109,14 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
 
     pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
     # pcd = pcd.voxel_down_sample(voxel_size=0.005)
-#--------------------------------------------------------------------------------
+
+# -------------------------FIND VERTICES----------------------------------------------
+
     cnt, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     rect = cv2.minAreaRect(cnt[0])
     box = cv2.boxPoints(rect)
     box = np.int0(box)  # turn into ints
-    box = box[np.argsort(box[:, 0])]
+    box = box[np.argsort(box[:, 0])]  # sort box vertices with respect x position
 
     if box[0, 1] > box[1, 1]:
         ul = box[0, :]
@@ -114,100 +130,75 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
     else:
         ur = box[3, :]
         dr = box[2, :]
+# ------------------------------------------
 
-    ul_mask = np.zeros(mask.shape)
-    dl_mask = np.zeros(mask.shape)
-    dr_mask = np.zeros(mask.shape)
-    ur_mask = np.zeros(mask.shape)
+# TODO: try this new code for removing redundant variables
 
-    ul_rgb = np.zeros(new_rgb.shape)
-    ur_rgb = np.zeros(new_rgb.shape)
-    dl_rgb = np.zeros(new_rgb.shape)
-    dr_rgb = np.zeros(new_rgb.shape)
+# TODO: look if it is possible to align depth and rgb and, in case, modify cameraInit script to be compliant with that
 
-    ul_mask[ul[1], ul[0]] = 1
-    dl_mask[dl[1], dl[0]] = 1
-    dr_mask[dr[1], dr[0]] = 1
-    ur_mask[ur[1], ur[0]] = 1
+    vertices = {"UL": ul, "DL": dl, "UR": ur, "DR": dr}
+    vertices_pcd = {}
 
-    for i in range(3):
-        ul_rgb[:, :, i] = np.multiply(new_rgb[:, :, i], ul_mask)
-        ur_rgb[:, :, i] = np.multiply(new_rgb[:, :, i], ur_mask)
-        dl_rgb[:, :, i] = np.multiply(new_rgb[:, :, i], dl_mask)
-        dr_rgb[:, :, i] = np.multiply(new_rgb[:, :, i], dr_mask)
-
-    ul_rgb = np.array(ul_rgb, dtype=np.uint8)
-    ur_rgb = np.array(ur_rgb, dtype=np.uint8)
-    dl_rgb = np.array(dl_rgb, dtype=np.uint8)
-    dr_rgb = np.array(dr_rgb, dtype=np.uint8)
-
-    # # extract mask from depth
-    # new_depth = np.multiply(new_depth, new_mask)
-
-    # new_rgb = np.array(new_rgb, dtype=np.uint8)
-    # new_depth = np.array(new_depth, dtype=np.uint16)
+    for key, point in vertices.items():
+        # initialize mask and rgb for points
+        point_mask = np.zeros(mask.shape)
+        point_rgb = np.zeros(new_rgb.shape)
 
 
+        # change a single value of the mask to one in order to have only the vertex position on the mask
+        point_mask[point[1], point[0]] = 1
 
-    ul_depth = np.multiply(new_depth, ul_mask)
-    ur_depth = np.multiply(new_depth, ur_mask)
-    dl_depth = np.multiply(new_depth, dl_mask)
-    dr_depth = np.multiply(new_depth, dr_mask)
+        # lets extract the point position
+        point_depth = np.multiply(depth, point_mask)
 
-    ul_depth = np.array(ul_depth, dtype=np.uint16)
-    ur_depth = np.array(ur_depth, dtype=np.uint16)
-    dl_depth = np.array(dl_depth, dtype=np.uint16)
-    dr_depth = np.array(dr_depth, dtype=np.uint16)
+        # If the point found on the depth has a zero value we need to found another value different from zero around
+        # the point found
+        # TODO: check if situations in which this while does not stop can occur
+        counter = 0
+        # pdb.set_trace()
+        while np.sum(point_depth) == 0:
+            # print('entering while with %s' % key)
+            counter += 1
+            if counter == 6:
+                dim = [0, 0, 0]
+                return dim
+            # search around the vertex point for a depth value different from zero
+            for i in range(-counter, counter+1):
+                for j in range(-counter, counter+1):
+                    # print(i, j)
+                    point_mask = np.zeros(mask.shape)
+                    point_mask[point[1] + i, point[0] + j] = 1
+                    point_depth = np.multiply(depth, point_mask)
+                    if np.sum(point_depth) != 0:
+                        break
+                else:  # TODO: control if this work for breaking nested loops
+                    continue
+                break
 
-    ul_depth = o3d.geometry.Image(ul_depth)
-    ur_depth = o3d.geometry.Image(ur_depth)
-    dl_depth = o3d.geometry.Image(dl_depth)
-    dr_depth = o3d.geometry.Image(dr_depth)
+        # extract rgb
+        for j in range(3):
+            point_rgb[:, :, j] = np.multiply(new_rgb[:, :, j], point_mask)
 
-    ul_rgb = o3d.geometry.Image(ul_rgb)
-    ur_rgb = o3d.geometry.Image(ur_rgb)
-    dl_rgb = o3d.geometry.Image(dl_rgb)
-    dr_rgb = o3d.geometry.Image(dr_rgb)
+        point_rgb = np.array(point_rgb, dtype=np.uint8)
+        point_depth = np.array(point_depth, dtype=np.uint16)
 
-    rgbd_ul = o3d.geometry.RGBDImage.create_from_color_and_depth(ul_rgb, ul_depth)
-    rgbd_ur = o3d.geometry.RGBDImage.create_from_color_and_depth(ur_rgb, ur_depth)
-    rgbd_dl = o3d.geometry.RGBDImage.create_from_color_and_depth(dl_rgb, dl_depth)
-    rgbd_dr = o3d.geometry.RGBDImage.create_from_color_and_depth(dr_rgb, dr_depth)
+        point_rgb = o3d.geometry.Image(point_rgb)
+        point_depth = o3d.geometry.Image(point_depth)
 
-    pcd_ul = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_ul, intrinsic)
-    pcd_ur = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_ur, intrinsic)
-    pcd_dl = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_dl, intrinsic)
-    pcd_dr = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_dr, intrinsic)
+        point_rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(point_rgb, point_depth)
+        point_cloud = o3d.geometry.PointCloud.create_from_rgbd_image(point_rgbd, intrinsic)
 
-    if np.sum(pcd_ul.points) == 0 or np.sum(pcd_ur.points) == 0 or np.sum(pcd_dl.points) == 0 or np.sum(pcd_dr.points) == 0:
-        dim = [0, 0, 0]
-        return dim
-
-
-
-    # pcd_ul.paint_uniform_color([1.0, 0, 0])
-    # pcd_ur.paint_uniform_color([1.0, 0, 0])
-    # pcd_dl.paint_uniform_color([1.0, 0, 0])
-    # pcd_dr.paint_uniform_color([1.0, 0, 0])
-
-    # pcd2.paint_uniform_color([1.0, 0, 0])
-
-    # rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(new_rgb, new_depth)
-
-    # pcd2 = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
-    # pcd2.paint_uniform_color([1.0, 0, 0])
-
-    # o3d.visualization.draw_geometries([pcd, pcd_ur])
+        vertices_pcd[key] = point_cloud
 
 
 # --------------------------------------------------------------------------------
 
-    #plane_model, inliers = pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
+    # plane_model, inliers = pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
     try:
         plane_model, inliers = pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
     except:
         print('Error during plane generation')
-        return [0,0,0]
+        return [0, 0, 0]
     if o3d.__version__ == '0.9.0.0':
         inlier_cloud = pcd.select_down_sample(inliers)
         # outlier_cloud = pcd.select_down_sample(inliers, invert=True)
@@ -215,89 +206,45 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
         inlier_cloud = pcd.select_by_index(inliers)
         # outlier_cloud = pcd.select_by_index(inliers, invert=True)
 
-    # max_x = np.max(np.asarray(inlier_cloud.points)[:, 0])
-    # min_x = np.min(np.asarray(inlier_cloud.points)[:, 0])
-    # max_y = np.max(np.asarray(inlier_cloud.points)[:, 1])
-    # min_y = np.min(np.asarray(inlier_cloud.points)[:, 1])
-    # max_z = np.max(np.asarray(inlier_cloud.points)[:, 2])
     min_z = np.min(np.asarray(inlier_cloud.points)[:, 2])
-    #
-    # inlier_array = np.asarray(inlier_cloud.points)
-    #
-    # down  = np.mean(inlier_array[np.where(inlier_array[:, 1] == min_y), :], 1)
-    # up    = np.mean(inlier_array[np.where(inlier_array[:, 1] == max_y), :], 1)
-    # left  = np.mean(inlier_array[np.where(inlier_array[:, 0] == min_x), :], 1)
-    # right = np.mean(inlier_array[np.where(inlier_array[:, 0] == max_x), :], 1)
-    #
-    # down_left  = np.linalg.norm(down - left)
-    # down_right = np.linalg.norm(down - right)
-    # up_right = np.linalg.norm(up - right)
-    # up_left = np.linalg.norm(up - left)
-    #
-    # side1 = np.mean([down_left, up_right])
-    # side2 = np.mean([down_right, up_left])
-    # pcd_left = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(left))
-    # pcd_right = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(right))
-    # pcd_down = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(down))
-    # pcd_up = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(up))
-    # pcd_left.paint_uniform_color([1.0, 0, 0])
-    # pcd_right.paint_uniform_color([1.0, 0, 0])
-    # pcd_down.paint_uniform_color([1.0, 0, 0])
-    # pcd_up.paint_uniform_color([1.0, 0, 0])
-    inlier_cloud = inlier_cloud.voxel_down_sample(voxel_size=0.005)
-    # o3d.visualization.draw_geometries([inlier_cloud, pcd_left, pcd_right, pcd_down, pcd_up])
-    # o3d.visualization.draw_geometries([pcd_left, pcd_right, pcd_down, pcd_up])
-    # o3d.visualization.draw_geometries([pcd])
-    # inlier_cloud.paint_uniform_color([0, 1.0, 0])
+    inlier_cloud = inlier_cloud.voxel_down_sample(voxel_size=0.01)
 
-    ul_min = 100000000
-    ur_min = 100000000
-    dl_min = 100000000
-    dr_min = 100000000
+#     # pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector([dr_real, dl_real, ul_real, ur_real]))
+#     # pcd.paint_uniform_color([1.0, 0, 0])
+#     # o3d.visualization.draw_geometries([inlier_cloud, pcd])#, ur_real, dl_real, dr_real])
+#
 
-    ul_point = pcd_ul.points[0][:2]
-    ur_point = pcd_ur.points[0][:2]
-    dl_point = pcd_dl.points[0][:2]
-    dr_point = pcd_dr.points[0][:2]
+    real_points = {}
+    min_values = {}
+    for key in vertices_pcd.keys():
+        min_values[key] = 1000000
+
     for point in inlier_cloud.points:
+        for key, pcd_point in vertices_pcd.items():
 
-        ul_dist = np.linalg.norm(ul_point - point[:2])
-        ur_dist = np.linalg.norm(ur_point - point[:2])
-        dl_dist = np.linalg.norm(dl_point - point[:2])
-        dr_dist = np.linalg.norm(dr_point - point[:2])
-        if ul_dist < ul_min:
-            ul_min = ul_dist
-            ul_real = point
+            pcd_point = pcd_point.points[0][:2]
+            distance = np.linalg.norm(pcd_point - point[:2])
 
-        if ur_dist < ur_min:
-            ur_min = ur_dist
-            ur_real = point
+            if distance < min_values[key]:
+                min_values[key] = distance
+                real_points[key] = point
 
-        if dl_dist < dl_min:
-            dl_min = dl_dist
-            dl_real = point
+    left_side = np.linalg.norm(real_points['DL'] - real_points['UL'])
+    down_side = np.linalg.norm(real_points['DL'] - real_points['DR'])
+    up_side = np.linalg.norm(real_points['UL'] - real_points['UR'])
+    right_side = np.linalg.norm(real_points['UR'] - real_points['DR'])
 
-        if dr_dist < dr_min:
-            dr_min = dr_dist
-            dr_real = point
-
-    # pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector([dr_real, dl_real, ul_real, ur_real]))
-    # pcd.paint_uniform_color([1.0, 0, 0])
-    # o3d.visualization.draw_geometries([inlier_cloud, pcd])#, ur_real, dl_real, dr_real])
-
-    left_side = np.linalg.norm(dl_real - ul_real)
-    down_side = np.linalg.norm(dl_real - dr_real)
-    up_side = np.linalg.norm(ul_real - ur_real)
-    right_side = np.linalg.norm(ur_real - dr_real)
 
     side1 = np.mean([left_side, right_side])
     side2 = np.mean([down_side, up_side])
 
-    dimX = max(side1, side2)
-    dimY = min(side1, side2)
-    # # dimZ = max_z - min_z
-    dimZ = cam2plane_distance - min_z
+    # -------------- COMPUTE DIMENSIONS---------------
 
-    dim = [dimX, dimY, dimZ]
+    dim_x = max(side1, side2)
+    dim_y = min(side1, side2)
+    # # dimZ = max_z - min_z
+    dim_z = cam2plane_distance - min_z
+
+    dim = [dim_x, dim_y, dim_z]
 
     return dim
