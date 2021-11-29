@@ -77,18 +77,23 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
 
     # TODO: control if there is more than one cnt and in case take the one bigger
     cnt, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    if len(cnt)>1:
-        dim = [0, 0, 0]
-        return dim
-    rect = cv2.minAreaRect(cnt[0])
+
+    max_area = 0
+    # pdb.set_trace()
+    for cont in cnt:
+        if cv2.contourArea(cont) > max_area:
+            max_area = cv2.contourArea(cont)
+            max_cnt = cont
+
+    rect = cv2.minAreaRect(max_cnt)
     box = cv2.boxPoints(rect)
     box = np.int0(box)  # turn into ints
+    mask = np.zeros(mask.shape, dtype=np.uint8)
     cv2.fillPoly(mask, pts=[box], color=(255, 255, 255))
     mask = np.array(mask, dtype=np.uint8)
 
-    cv2.namedWindow('Mask', cv2.WINDOW_NORMAL)
-    cv2.imshow('Mask', mask)
-
+    cv2.namedWindow('Mask rect', cv2.WINDOW_NORMAL)
+    cv2.imshow('Mask rect', mask)
 
     # binarize mask
     mask[mask > 254] = 1
