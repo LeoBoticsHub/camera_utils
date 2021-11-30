@@ -6,7 +6,6 @@ except ImportError:
     print("pyzed.sl module not found")
 
 
-
 class Camera:
 
     camera_name = ""
@@ -155,6 +154,23 @@ class Camera:
         color_frame = np.asanyarray(color_frame_cam.get_data())
 
         return color_frame, depth_frame
+
+    def get_aligned_frames(self):
+        if self.camera_name == "intel":
+            depth_frame_cam, color_frame_cam = None, None
+            while not color_frame_cam or not depth_frame_cam:
+                frames = self.pipeline.wait_for_frames()
+                align = rs.align(rs.stream.color)
+                aligned_frames = align.process(frames)
+                color_frame_cam = aligned_frames.first(rs.stream.color)
+                depth_frame_cam = aligned_frames.get_depth_frame()
+            depth_frame = np.asanyarray(depth_frame_cam.get_data())
+            color_frame = np.asanyarray(color_frame_cam.get_data())
+
+            return color_frame, depth_frame
+
+
+
 
     def set_option(self, option, value):
         option_name = str(option)
