@@ -76,7 +76,10 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd = True):
             depth_new = np.multiply(depth_new, mask[j, :, :])
 
             # compute angle
-            alpha = compute_angle_from_rgb(rgb_new, depth_new)
+            try:
+                alpha = compute_angle_from_rgb(rgb_new, depth_new)
+            except:
+                alpha = 0
 
             # compute center
             rgb_new = o3d.geometry.Image(rgb_new)
