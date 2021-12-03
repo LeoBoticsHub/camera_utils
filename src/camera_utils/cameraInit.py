@@ -169,9 +169,6 @@ class Camera:
 
             return color_frame, depth_frame
 
-
-
-
     def set_option(self, option, value):
         option_name = str(option)
         try:
