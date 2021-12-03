@@ -76,6 +76,7 @@ class IntelRealsense(Camera):
 
     def __del__(self):
         self.pipeline.stop()
+        print("%s camera closed" % self.camera_name)
 
     def get_rgb(self):
         color_frame = None
@@ -184,6 +185,10 @@ class Zed(Camera):
                          'py': [left_intr.cy, right_intr.cy]}
 
         print("%s camera configured.\n" % self.camera_name)
+
+    def __del__(self):
+        self.pipeline.close()
+        print("%s camera closed" % self.camera_name)
 
     def get_rgb(self):
         color_frame_left = sl.Mat()
