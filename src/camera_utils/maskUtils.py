@@ -30,17 +30,21 @@ def get_ball_center(color_frame, yellow_ball_lower, yellow_ball_upper):
         # it to compute the minimum enclosing circle and
         # centroid
         c = max(cnts, key=cv2.contourArea)
-        ((x, y), radius) = cv2.minEnclosingCircle(c)
+        if cv2.contourArea(c) > 80:
+            ((x, y), radius) = cv2.minEnclosingCircle(c)
 
     return [x, y, radius]
+
 
 def colorMask(color_frame, yellow_ball_lower, yellow_ball_upper):
     mask = np.zeros((1080, 1920), dtype="uint8")
 
     # center_and_radius = getBallCenter(color_frame)
     x, y, radius = get_ball_center(color_frame, yellow_ball_lower, yellow_ball_upper)
-
-    cv2.circle(mask, (int(x), int(y)), int(radius), (255, 255, 255), -1)
+    try:
+        cv2.circle(mask, (int(x), int(y)), int(radius), (255, 255, 255), -1)
+    except TypeError:
+        mask = np.ones((1080, 1920), dtype="uint8")*255
 
     # mask[mask > 254] = True
     mask = mask > 254
