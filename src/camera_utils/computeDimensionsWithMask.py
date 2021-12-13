@@ -6,6 +6,31 @@ import math
 from camera_utils.from2Dto3D import compute_angle_from_rgb
 import cv2
 
+
+def find_vertices_from_mask(mask):
+    cnt, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    rect = cv2.minAreaRect(cnt[0])
+    box = cv2.boxPoints(rect)
+    box = np.int0(box)  # turn into ints
+    box = box[np.argsort(box[:, 0])]  # sort box vertices with respect x position
+
+    if box[0, 1] > box[1, 1]:
+        ul = box[0, :]
+        dl = box[1, :]
+    else:
+        dl = box[0, :]
+        ul = box[1, :]
+    if box[2, 1] > box[3, 1]:
+        ur = box[2, :]
+        dr = box[3, :]
+    else:
+        ur = box[3, :]
+        dr = box[2, :]
+
+    vertices = {"UL": ul, "DL": dl, "UR": ur, "DR": dr}
+    return vertices
+
+
 def compute_dimensions_with_angle(rgb, depth, mask, intrinsics, cam2plane_distance):
 
     # set intrinsics for open3d
@@ -75,7 +100,6 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
     intrinsic = o3d.camera.PinholeCameraIntrinsic()
     intrinsic.set_intrinsics(width, height, intrinsics['fx'], intrinsics['fy'], intrinsics['px'], intrinsics['py'])
 
-    # TODO: control if there is more than one cnt and in case take the one bigger
     cnt, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     max_area = 0
@@ -115,33 +139,8 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
     pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
     # pcd = pcd.voxel_down_sample(voxel_size=0.005)
 
-# -------------------------FIND VERTICES----------------------------------------------
-
-    cnt, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    rect = cv2.minAreaRect(cnt[0])
-    box = cv2.boxPoints(rect)
-    box = np.int0(box)  # turn into ints
-    box = box[np.argsort(box[:, 0])]  # sort box vertices with respect x position
-
-    if box[0, 1] > box[1, 1]:
-        ul = box[0, :]
-        dl = box[1, :]
-    else:
-        dl = box[0, :]
-        ul = box[1, :]
-    if box[2, 1] > box[3, 1]:
-        ur = box[2, :]
-        dr = box[3, :]
-    else:
-        ur = box[3, :]
-        dr = box[2, :]
-# ------------------------------------------
-
-# TODO: try this new code for removing redundant variables
-
-# TODO: look if it is possible to align depth and rgb and, in case, modify cameraInit script to be compliant with that
-
-    vertices = {"UL": ul, "DL": dl, "UR": ur, "DR": dr}
+# # -------------------------FIND VERTICES----------------------------------------------
+    vertices = find_vertices_from_mask(mask)
     vertices_pcd = {}
 
     for key, point in vertices.items():
@@ -158,7 +157,6 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
 
         # If the point found on the depth has a zero value we need to found another value different from zero around
         # the point found
-        # TODO: check if situations in which this while does not stop can occur
         counter = 0
         # pdb.set_trace()
         while np.sum(point_depth) == 0:
@@ -176,7 +174,7 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
                     point_depth = np.multiply(depth, point_mask)
                     if np.sum(point_depth) != 0:
                         break
-                else:  # TODO: control if this work for breaking nested loops
+                else:
                     continue
                 break
 
@@ -248,6 +246,61 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
     dim_x = max(side1, side2)
     dim_y = min(side1, side2)
     # # dimZ = max_z - min_z
+    dim_z = cam2plane_distance - min_z
+
+    dim = [dim_x, dim_y, dim_z]
+
+    return dim
+
+
+# rgb is a list composed by left and right rgb and the same is for intrinsics
+def compute_dimensions_with_stereo(masks, intrinsics, cam2cam_distance, cam2plane_distance):
+
+    left_mask = masks[0]
+    right_mask = masks[1]
+
+    cv2.namedWindow('left_mask', cv2.WINDOW_NORMAL)
+    cv2.imshow('left_mask', left_mask)
+
+    left_vertices = find_vertices_from_mask(left_mask)
+    right_vertices = find_vertices_from_mask(right_mask)
+
+    vertices3d = {}
+    min_z = 100000
+
+    for key in left_vertices.keys():
+
+        x_left = left_vertices[key][0]
+        x_right = right_vertices[key][0]
+
+        if x_left is not None and x_right is not None:
+
+            x_l = x_left - intrinsics['px'][0]
+            x_r = x_right - intrinsics['px'][1]
+
+            disparity = -(x_r - x_l * (intrinsics['px'][1] / intrinsics['px'][0]))
+            depth = (intrinsics['fx'][1] * cam2cam_distance) / disparity
+            mu = left_vertices[key]
+
+            z = depth * 0.01
+            x = ((mu[0] - intrinsics['px'][0]) * z) / intrinsics['fx'][1]
+            y = ((mu[1] - intrinsics['py'][0]) * z) / intrinsics['fy'][1]
+
+            vertices3d[key] = np.array([x, y, z])
+
+            if z < min_z:
+                min_z = z
+
+    left_side = np.linalg.norm(vertices3d['DL'] - vertices3d['UL'])
+    down_side = np.linalg.norm(vertices3d['DL'] - vertices3d['DR'])
+    up_side = np.linalg.norm(vertices3d['UL'] - vertices3d['UR'])
+    right_side = np.linalg.norm(vertices3d['UR'] - vertices3d['DR'])
+
+    side1 = np.mean([left_side, right_side])
+    side2 = np.mean([down_side, up_side])
+
+    dim_x = max(side1, side2)
+    dim_y = min(side1, side2)
     dim_z = cam2plane_distance - min_z
 
     dim = [dim_x, dim_y, dim_z]
