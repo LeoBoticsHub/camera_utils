@@ -1,4 +1,5 @@
 import pdb
+import sys
 
 import open3d as o3d
 import cv2
@@ -49,7 +50,10 @@ def compute_angle_from_rgb(rgb, depth):
     return alpha
 
 
-def compute_centroids(rgb, depth, mask, intrinsics, use_pcd = True):
+def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
+    if not rgb[:, :, 0].shape == depth.shape:
+        sys.exit("\nfrom2Dto3D/compute_dimensions function: rgb and depth shapes are different."
+                 " They should have equal dimensions.\n")
     focal_length = [intrinsics['fx'], intrinsics['fy']]
     principal_point = [intrinsics['px'], intrinsics['py']]
 
@@ -66,6 +70,9 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd = True):
 
         intrinsic = o3d.camera.PinholeCameraIntrinsic()
         intrinsic.set_intrinsics(depth.shape[1], depth.shape[0], focal_length[0], focal_length[1], principal_point[0], principal_point[1])
+
+        if mask.shape == depth.shape:
+            mask = np.expand_dims(mask, axis=0)
 
         for j in range(mask.shape[0]):
             rgb_new = rgb.copy()
