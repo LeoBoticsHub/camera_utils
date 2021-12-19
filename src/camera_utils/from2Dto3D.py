@@ -57,7 +57,7 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
     focal_length = [intrinsics['fx'], intrinsics['fy']]
     principal_point = [intrinsics['px'], intrinsics['py']]
 
-    if mask.shape[0] == 0 or mask is None:
+    if mask is None or mask.shape[0]:
         points_and_angles = [[[0, 0, 0], 0]]
         return points_and_angles
     # convert image to np array
