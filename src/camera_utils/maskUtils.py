@@ -36,7 +36,7 @@ def get_ball_center(color_frame, yellow_ball_lower, yellow_ball_upper):
     return [x, y, radius]
 
 
-def colorMask(color_frame, yellow_ball_lower, yellow_ball_upper):
+def color_mask(color_frame, yellow_ball_lower, yellow_ball_upper):
     mask = np.zeros((1080, 1920), dtype="uint8")
 
     # center_and_radius = getBallCenter(color_frame)

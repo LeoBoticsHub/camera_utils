@@ -5,16 +5,37 @@ import open3d as o3d
 import cv2
 import numpy as np
 import math
+from camera_utils.computeDimensionsWithMask import find_vertices_from_mask
 
 
 def extract_contours(rgb):
+    """
+    Extract the contours from a rgb image.
+
+    @param rgb: the image
+
+    @return:
+        A list with contours inside
+    """
     gray_cluster = cv2.cvtColor(rgb, cv2.COLOR_BGR2GRAY)
     cnt, _ = cv2.findContours(gray_cluster, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
     return cnt
 
 
-def compute_mu(rgb, depth, cnt):
+def compute_mu(cnt, rgb=None, depth=None):
+    '''
+    compute the rgb centroid from contours
+    rgb and depth are needed for their shape to scale the point
+
+    @param cnt:   the contours
+    @param rgb:   (None) the image
+    @param depth: (None) the depth image
+
+
+    @return:
+        A list containing position [X, Y] on image plane
+    '''
 
     x_sum, y_sum = 0, 0
     for cont in cnt[0]:
@@ -22,15 +43,28 @@ def compute_mu(rgb, depth, cnt):
         y_sum += cont[0, 1]
 
     mu = [int(x_sum / cnt[0].shape[0]), int(y_sum / cnt[0].shape[0])]
-    newX = (float(mu[0]) / rgb.shape[0]) * depth.shape[0]
-    newY = (float(mu[1]) / rgb.shape[1]) * depth.shape[1]
-    mu = [round(newX), round(newY)]
+    if rgb is None and depth is None:
+        new_x = (float(mu[0]) / rgb.shape[0]) * depth.shape[0]
+        new_y = (float(mu[1]) / rgb.shape[1]) * depth.shape[1]
+    else:
+        new_x = mu[0]
+        new_y = mu[1]
 
+    mu = [round(new_x), round(new_y)]
 
     return mu
 
 
 def compute_angle(mu, cnt):
+    '''
+    Compute the angle of the contoured object using image inertia
+
+    @param mu:      the image plane centroid [X, Y]
+    @param cnt:     object contours
+
+    @return:
+        the contours angle [rad] extracted from inertia
+    '''
     Ixx, Ixy, Iyy = 0, 0, 0
     for cont in cnt[0]:
         Ixx += pow(cont[0, 0] - mu[0], 2)
@@ -43,14 +77,51 @@ def compute_angle(mu, cnt):
 
 
 def compute_angle_from_rgb(rgb, depth):
+    '''
+    Compute the angle of the object from the rgb and depth information
+
+
+    @param rgb:    the rgb image
+    @param depth:  the depth image
+
+    @return:
+        the angle [rad] of the object
+    '''
     cnt = extract_contours(rgb)
-    mu = compute_mu(rgb, depth, cnt)
+    mu = compute_mu(cnt, rgb, depth)
     alpha = compute_angle(mu, cnt)
 
     return alpha
 
 
+def compute_angle_from_mask(mask):
+    '''
+    Compute the angle using the vertices of the mask
+
+    @param mask:   the object(s) mask(s)
+
+    @return:
+         the angle [rad] of the objects
+    '''
+    # TODO: Compute the angle using the vertices of the box
+    vertices = find_vertices_from_mask(mask)
+
+
 def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
+    '''
+    compute the 3D centroid(s) and angle(s) from mask(s)
+
+    @param rgb:        rgb image
+    @param depth:      depth image
+    @param mask:       the object mask (could be also a list of masks [mask1, mask2, ...]
+    @param intrinsics: the camera intrinsic parameters
+    @param use_pcd:    [bool] if true use pcd to compute centroids otherwise use only depth
+
+    @return:
+        A list of the form [[x, y, z], theta], [x, y, z], theta], ...] which contains the 3D
+        centroids and angles of the objects present in the masks
+    '''
+
     if not rgb[:, :, 0].shape == depth.shape:
         sys.exit("\nfrom2Dto3D/compute_dimensions function: rgb and depth shapes are different."
                  " They should have equal dimensions.\n")
@@ -109,7 +180,7 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
                 rgb_new[:, :, i] = np.multiply(rgb[:, :, i], mask[j, :, :])
 
             cnt = extract_contours(rgb_new)
-            mu = compute_mu(rgb_new, depth, cnt)
+            mu = compute_mu(cnt, rgb_new, depth)
 
             # compute 3D spatial coordinates with respect to the camera reference frame
             z = depth[mu[1], mu[0]] * 0.001

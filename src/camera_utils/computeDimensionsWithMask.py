@@ -8,6 +8,14 @@ import cv2
 
 
 def find_vertices_from_mask(mask):
+    '''
+    Find the vertices of the rectangle containing the object in the mask
+
+    @param mask: the object mask
+
+    @return: A dictionary containing the X,Y image position of the four vertices
+    {"UL": ul, "DL": dl, "UR": ur, "DR": dr}
+    '''
     cnt, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     rect = cv2.minAreaRect(cnt[0])
     box = cv2.boxPoints(rect)
@@ -32,7 +40,17 @@ def find_vertices_from_mask(mask):
 
 
 def compute_dimensions_with_angle(rgb, depth, mask, intrinsics, cam2plane_distance):
+    '''
+    Compute the dimensions of an object using angle information to rotate the PointCloud
 
+    @param rgb: the rgb image
+    @param depth: the depth image
+    @param mask: the object mask
+    @param intrinsics: the camera intrinsics parameters
+    @param cam2plane_distance: [m] the distance between the camera and the plane where the object is
+
+    @return: the object dimensions in form [dim_x, dim_y, dim_z]
+    '''
     # set intrinsics for open3d
     width = max(depth.shape[0], depth.shape[1])
     height = min(depth.shape[0], depth.shape[1])
@@ -93,6 +111,17 @@ def compute_dimensions_with_angle(rgb, depth, mask, intrinsics, cam2plane_distan
 
 
 def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plane_distance):
+    '''
+    Compute the dimensions of an object using the pointcloud library and the mask vertices
+
+    @param rgb: the rgb image
+    @param depth: the depth image
+    @param mask: the object mask
+    @param intrinsics: the camera intrinsics parameters
+    @param cam2plane_distance: [m] the distance between the camera and the plane where the object is
+
+    @return: the object dimensions in form [dim_x, dim_y, dim_z]
+    '''
 
     # set intrinsics for open3d
     width = max(depth.shape[0], depth.shape[1])
@@ -255,6 +284,16 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
 
 # rgb is a list composed by left and right rgb and the same is for intrinsics
 def compute_dimensions_with_stereo(masks, intrinsics, cam2cam_distance, cam2plane_distance):
+    '''
+    Compute the dimensions of an object using parallel stereo images with no depth
+
+    @param masks: the object masks [left, right]
+    @param intrinsics: the cameras intrinsics parameters [left, right]
+    @param cam2plane_distance: [m] the distance between the camera and the plane where the object is
+    @param cam2cam_distance: [cm] the distance between the two cameras centers
+
+    @return: the object dimensions in form [dim_x, dim_y, dim_z]
+    '''
 
     left_mask = masks[0]
     right_mask = masks[1]

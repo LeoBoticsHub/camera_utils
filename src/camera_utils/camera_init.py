@@ -32,15 +32,27 @@ class Camera:
         print("%s initialization" % self.camera_name)
 
     def get_intrinsics(self):
+        '''
+        :return: camera intrinsics
+        '''
         return self.intr
 
     def get_name(self):
+        '''
+        :return: camera name
+        '''
         return self.camera_name
 
     def get_serial_number(self):
+        '''
+        :return: camera serial number
+        '''
         return self.serial_number
 
     def get_fps(self):
+        '''
+        :return: camera frames per second
+        '''
         return self.fps
 
 
@@ -79,6 +91,9 @@ class IntelRealsense(Camera):
         print("%s camera closed" % self.camera_name)
 
     def get_rgb(self):
+        '''
+        :return: An rgb image as numpy array
+        '''
         color_frame = None
         while not color_frame:
             frames = self.pipeline.wait_for_frames()
@@ -88,6 +103,9 @@ class IntelRealsense(Camera):
         return color_frame
 
     def get_depth(self):
+        '''
+        :return: A depth image (1 channel) as numpy array
+        '''
         depth_frame = None
         while not depth_frame:
             frames = self.pipeline.wait_for_frames()
@@ -96,6 +114,9 @@ class IntelRealsense(Camera):
         return depth_frame
 
     def get_frames(self):
+        '''
+        :return: rgb, depth images as numpy arrays
+        '''
         depth_frame_cam, color_frame_cam = None, None
         while not color_frame_cam or not depth_frame_cam:
             frames = self.pipeline.wait_for_frames()
@@ -107,6 +128,9 @@ class IntelRealsense(Camera):
         return color_frame, depth_frame
 
     def get_aligned_frames(self):
+        '''
+        :return: rgb, depth images aligned with post-processing as numpy arrays
+        '''
         depth_frame_cam, color_frame_cam = None, None
         while not color_frame_cam or not depth_frame_cam:
             frames = self.pipeline.wait_for_frames()
@@ -120,6 +144,10 @@ class IntelRealsense(Camera):
         return color_frame, depth_frame
 
     def set_option(self, option, value):
+        '''
+        :param option: the option to be set (rs.option.OPTION_NAME)
+        :param value: the value of the option
+        '''
         option_name = str(option)
         try:
             sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1]
@@ -130,6 +158,9 @@ class IntelRealsense(Camera):
             print("\033[0;33;40m Exception (%s): the option %s has NOT been set." % (type(ex).__name__, option_name))
 
     def get_option(self, option):
+        '''
+        :param option: the option to be got (rs.option.OPTION_NAME)
+        '''
         option_name = str(option).replace('option.', '').upper()
         try:
             sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1]
@@ -145,6 +176,13 @@ class Zed(Camera):
 
     def __init__(self, single_camera_mode=True, rgb_resolution=Camera.Resolution.FullHD,
                  depth_resolution=Camera.Resolution.FullHD, fps=30, serial_number=""):
+        '''
+        :param single_camera_mode: boolean to choose if using the camera as a single camera or a dual camera (two images ...)
+        :param rgb_resolution: the rgb resolution of the camera (e.g., Zed.Resolution.HD)
+        :param depth_resolution: the depth resolution of the camera (e.g., Zed.Resolution.HD)
+        :param fps: the camera frames per second
+        :param serial_number: the camera serial number
+        '''
         Camera.__init__(self, rgb_resolution, depth_resolution, fps, serial_number)
 
         self.camera_name = "ZED"
@@ -191,6 +229,9 @@ class Zed(Camera):
         print("%s camera closed" % self.camera_name)
 
     def get_rgb(self):
+        '''
+        :return: An rgb image as numpy array or [left, right] rgb images depending on camera mode (single or double)
+        '''
         color_frame_left = sl.Mat()
         runtime_parameters = sl.RuntimeParameters()
         if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
@@ -206,6 +247,9 @@ class Zed(Camera):
             return color_frame_left, color_frame_right
 
     def get_depth(self):
+        '''
+        :return: A depth image as numpy array or [left, right] depth images depending on camera mode (single or double)
+        '''
         depth_frame = sl.Mat()
         runtime_parameters = sl.RuntimeParameters()
         if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
@@ -214,6 +258,9 @@ class Zed(Camera):
         return depth_frame
 
     def get_frames(self):
+        '''
+        :return: rgb, depth image as numpy array or [left rgb, right rgb], depth images depending on camera mode
+        '''
         color_frame_left = sl.Mat()
         depth_frame = sl.Mat()
         runtime_parameters = sl.RuntimeParameters()
@@ -232,6 +279,10 @@ class Zed(Camera):
             return [color_frame_left, color_frame_right], depth_frame
 
     def set_option(self, option, value):
+        '''
+        :param option: the option to be set (sl.)
+        :param value: the value of the option
+        '''
         option_name = str(option).replace('VIDEO_SETTINGS.', '').upper()
         try:
             self.pipeline.set_camera_settings(option, value)
@@ -240,6 +291,9 @@ class Zed(Camera):
             print("\033[0;33;40m Exception (%s): the option %s has NOT been set." % (type(ex).__name__, option_name))
 
     def get_option(self, option):
+        '''
+        :param option: the option to be got (sl.)
+        '''
         option_name = str(option).replace('VIDEO_SETTINGS.', '').upper()
         try:
             value = self.pipeline.get_camera_settings(option)
