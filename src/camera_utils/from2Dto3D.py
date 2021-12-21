@@ -5,7 +5,7 @@ import open3d as o3d
 import cv2
 import numpy as np
 import math
-from camera_utils.computeDimensionsWithMask import find_vertices_from_mask
+# from camera_utils.computeDimensionsWithMask import find_vertices_from_mask
 
 
 def extract_contours(rgb):
@@ -94,17 +94,17 @@ def compute_angle_from_rgb(rgb, depth):
     return alpha
 
 
-def compute_angle_from_mask(mask):
-    '''
-    Compute the angle using the vertices of the mask
-
-    @param mask:   the object(s) mask(s)
-
-    @return:
-         the angle [rad] of the objects
-    '''
-    # TODO: Compute the angle using the vertices of the box
-    vertices = find_vertices_from_mask(mask)
+# def compute_angle_from_mask(mask):
+#     '''
+#     Compute the angle using the vertices of the mask
+#
+#     @param mask:   the object(s) mask(s)
+#
+#     @return:
+#          the angle [rad] of the objects
+#     '''
+#     # TODO: Compute the angle using the vertices of the box
+#     # vertices = find_vertices_from_mask(mask)
 
 
 def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
