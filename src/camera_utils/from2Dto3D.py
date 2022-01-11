@@ -5,7 +5,6 @@ import open3d as o3d
 import cv2
 import numpy as np
 import math
-from camera_utils.computeDimensionsWithMask import find_vertices_from_mask
 
 
 def extract_contours(rgb):
@@ -94,6 +93,50 @@ def compute_angle_from_rgb(rgb, depth):
     return alpha
 
 
+def compute_2dvector_angle(vector):
+    # turn the vector when it overcome 90 degrees
+    if vector[0] < 0:
+        vector = -vector
+    vec_norm = np.linalg.norm(vector)
+    x_norm = vector[0]/vec_norm
+    y_norm = vector[1]/vec_norm
+    angle = math.atan2(-y_norm, x_norm)  # the minus in y is due to the coordinate changes of opencv (y points downward)
+    return angle
+
+
+def find_vertices_from_mask(mask):
+    """
+    Find the vertices of the rectangle containing the object in the mask
+
+    @param mask: the object mask
+
+    @return: A dictionary containing the X,Y image position of the four vertices
+    {"UL": ul, "DL": dl, "UR": ur, "DR": dr}
+    """
+    cnt, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    rect = cv2.minAreaRect(cnt[0])
+    box = cv2.boxPoints(rect)
+    box = np.int0(box)  # turn into ints
+    box = box[np.argsort(box[:, 1])]  # sort box vertices with respect y position
+
+    if box[0, 0] < box[1, 0]:
+        ul = box[0, :]
+        ur = box[1, :]
+    else:
+        ur = box[0, :]
+        ul = box[1, :]
+    if box[2, 0] < box[3, 0]:
+        dl = box[2, :]
+        dr = box[3, :]
+    else:
+        dl = box[3, :]
+        dr = box[2, :]
+
+    vertices = {"UL": ul, "DL": dl, "UR": ur, "DR": dr}
+    return vertices
+
+
+
 def compute_angle_from_mask(mask):
     '''
     Compute the angle using the vertices of the mask
@@ -103,8 +146,21 @@ def compute_angle_from_mask(mask):
     @return:
          the angle [rad] of the objects
     '''
-    # TODO: Compute the angle using the vertices of the box
+    # TODO: Compute the angle using the vertices of the box)
     vertices = find_vertices_from_mask(mask)
+
+    up_vector = vertices['UR'] - vertices['UL']
+    right_vector = vertices['UR'] - vertices['DR']
+
+    # use longer side to compute x angle
+    if np.linalg.norm(up_vector) < np.linalg.norm(right_vector):
+        angle = compute_2dvector_angle(right_vector)
+    else:
+        angle = compute_2dvector_angle(up_vector)
+
+
+
+    return angle
 
 
 def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
@@ -130,6 +186,7 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
 
     if mask is None or mask.shape[0] == 0:
         points_and_angles = [[[0, 0, 0], 0]]
+        print("No mask detected!")
         return points_and_angles
     # convert image to np array
     rgb = np.asarray(rgb)
@@ -155,10 +212,12 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
             depth_new = np.multiply(depth_new, mask[j, :, :])
 
             # compute angle
-            try:
-                alpha = compute_angle_from_rgb(rgb_new, depth_new)
-            except:
-                alpha = 0
+            # try:
+            alpha = compute_angle_from_mask(mask[j])
+            # except:
+            #     alpha = 0
+
+            print(alpha*180/3.1415)
 
             # compute center
             rgb_new = o3d.geometry.Image(rgb_new)
