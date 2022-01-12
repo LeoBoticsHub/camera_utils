@@ -1,11 +1,14 @@
 # import the necessary packages
 import cv2
 
+
 def getBoxMask(color_frame):
-    # box_lower_hsv_color = (10, 50, 70)
-    # box_upper_hsv_color = (30, 150, 190)
+    # intel
     box_lower_hsv_color = (5, 30, 70)
     box_upper_hsv_color = (25, 150, 190)
+    # # zed
+    # box_lower_hsv_color = (10, 30, 70)
+    # box_upper_hsv_color = (30, 200, 200)
 
     hsv = cv2.cvtColor(color_frame, cv2.COLOR_BGR2HSV)
 
