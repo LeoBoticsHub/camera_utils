@@ -104,19 +104,15 @@ def compute_2dvector_angle(vector):
     return angle
 
 
-def find_vertices_from_mask(mask):
+def find_vertices_from_mask(box):
     """
     Find the vertices of the rectangle containing the object in the mask
 
-    @param mask: the object mask
+    @param box: the box used to find the vertices
 
     @return: A dictionary containing the X,Y image position of the four vertices
     {"UL": ul, "DL": dl, "UR": ur, "DR": dr}
     """
-    cnt, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    rect = cv2.minAreaRect(cnt[0])
-    box = cv2.boxPoints(rect)
-    box = np.int0(box)  # turn into ints
     box = box[np.argsort(box[:, 1])]  # sort box vertices with respect y position
 
     if box[0, 0] < box[1, 0]:
@@ -136,7 +132,6 @@ def find_vertices_from_mask(mask):
     return vertices
 
 
-
 def compute_angle_from_mask(mask):
     '''
     Compute the angle using the vertices of the mask
@@ -147,7 +142,21 @@ def compute_angle_from_mask(mask):
          the angle [rad] of the objects
     '''
     # TODO: Compute the angle using the vertices of the box)
-    vertices = find_vertices_from_mask(mask)
+    cnt, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    max_area = 0
+    max_cnt = cnt[0]
+
+    for cont in cnt:
+        if cv2.contourArea(cont) > max_area:
+            max_area = cv2.contourArea(cont)
+            max_cnt = cont
+
+    rect = cv2.minAreaRect(max_cnt)
+    box = cv2.boxPoints(rect)
+    box = np.int0(box)  # turn into ints
+
+    vertices = find_vertices_from_mask(box)
 
     up_vector = vertices['UR'] - vertices['UL']
     right_vector = vertices['UR'] - vertices['DR']
@@ -157,8 +166,6 @@ def compute_angle_from_mask(mask):
         angle = compute_2dvector_angle(right_vector)
     else:
         angle = compute_2dvector_angle(up_vector)
-
-
 
     return angle
 
