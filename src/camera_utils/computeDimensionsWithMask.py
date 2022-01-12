@@ -219,8 +219,7 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
     # cv2.namedWindow('Mask rect', cv2.WINDOW_NORMAL)
     # cv2.imshow('Mask rect', rect_mask)
 
-
-    # binarize mask
+    # mask binarization
     mask[mask > 254] = 1
 
     new_rgb = rgb.copy()
@@ -243,9 +242,8 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
 
     # -------------------------FIND ORIGINAL 3D VERTICES------------------------------
     vertices = find_vertices_from_mask(mask)
-    vertices_pcd = {}
 
-    # print mask with vertices coloured vertices
+    # Plot the mask with vertices coloured vertices
     rect_mask = cv2.circle(rect_mask, (vertices['UL'][0], vertices['UL'][1]),
                            radius=3, color=(0, 0, 255), thickness=2)  # red
     rect_mask = cv2.circle(rect_mask, (vertices['UR'][0], vertices['UR'][1]),
@@ -268,12 +266,14 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
     cv2.putText(rect_mask, text='DL', org=(vertices['DL'][0]-text_shift, vertices['DL'][1]+text_shift*2),
                 fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.8, color=(255, 255, 255),
                 thickness=2, lineType=cv2.LINE_AA)
+
     cv2.namedWindow('Mask rect', cv2.WINDOW_NORMAL)
     cv2.imshow('Mask rect', rect_mask)
 
-
-
+    # 3D vertices searching
+    vertices_pcd = {}
     for vertex_id, point in vertices.items():
+
         # initialize mask and rgb for points
         point_mask = np.zeros(mask.shape)
         point_rgb = np.zeros(new_rgb.shape)
@@ -333,7 +333,7 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
     # ------------------------PLANE SEGMENTATION TO REMOVE NOISY OUTLIERS------------------------
 
     try:
-        plane_model, inliers = pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
+        plane_model, inliers = pcd.segment_plane(distance_threshold=0.008, ransac_n=3, num_iterations=1000)
     except:
         print('Error during plane generation')
         return [0, 0, 0]
@@ -356,7 +356,7 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
 
     for point in inlier_cloud.points:
         for vertex_id, pcd_point in vertices_pcd.items():
-
+            # pdb.set_trace()
             pcd_point = pcd_point.points[0][:2]
             distance = np.linalg.norm(pcd_point - point[:2])
 
@@ -373,12 +373,12 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
     #     point.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
     # inlier_cloud.paint_uniform_color([0, 1.0, 0])
     # inlier_cloud.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
-    # inlier_cloud = inlier_cloud.voxel_down_sample(voxel_size=0.005)
+    # # inlier_cloud = inlier_cloud.voxel_down_sample(voxel_size=0.005)
     # refined_pcd.paint_uniform_color([1.0, 0, 0])
     # refined_pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
     # pcd.paint_uniform_color([0.5, 0.5, 0.5])
     # pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
-    # pcd = pcd.voxel_down_sample(voxel_size=0.005)
+    # # pcd = pcd.voxel_down_sample(voxel_size=0.005)
     # o3d.visualization.draw_geometries([pcd, inlier_cloud, refined_pcd, vertices_pcd['UL'], vertices_pcd['UR'],
     #                                    vertices_pcd['DL'], vertices_pcd['DR']])
 
