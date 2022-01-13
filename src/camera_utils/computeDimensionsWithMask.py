@@ -238,7 +238,7 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
 
     pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
     # pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
-    # pcd = pcd.voxel_down_sample(voxel_size=0.005)
+    pcd = pcd.voxel_down_sample(voxel_size=0.005)
 
     # -------------------------FIND ORIGINAL 3D VERTICES------------------------------
     vertices = find_vertices_from_mask(mask)
@@ -345,7 +345,7 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
         # outlier_cloud = pcd.select_by_index(inliers, invert=True)
 
     min_z = np.min(np.asarray(inlier_cloud.points)[:, 2])
-    # inlier_cloud = inlier_cloud.voxel_down_sample(voxel_size=0.005)
+    inlier_cloud = inlier_cloud.voxel_down_sample(voxel_size=0.005)
 
     # ---------------FIND THE NEAREST POINT TO THE 3D VERTICES IN THE SEGMENTED PLANE---------------
 
@@ -366,6 +366,10 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
 
     # # Print plane segmented with real 3d vertices plus original pcd and vertices
     # pdb.set_trace()  # used otherwise closing a launch file while plotting a pointcloud with open3d could be painful
+    # vertices_pcd['DL'].paint_uniform_color([0, 0, 1.0])  # blue
+    # vertices_pcd['DR'].paint_uniform_color([1.0, 1.0, 0])  # yellow
+    # vertices_pcd['UL'].paint_uniform_color([1.0, 0, 0])  # red
+    # vertices_pcd['UR'].paint_uniform_color([0, 1.0, 0])  # green
     # refined_pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector([real_vertices['UL'], real_vertices['UR'],
     #                                                                   real_vertices['DL'], real_vertices['DR']]))
     # for point in vertices_pcd.values():
@@ -400,5 +404,3 @@ def compute_dimensions_with_angles_points(rgb, depth, mask, intrinsics, cam2plan
     dim = [dim_x, dim_y, dim_z]
 
     return dim
-
-

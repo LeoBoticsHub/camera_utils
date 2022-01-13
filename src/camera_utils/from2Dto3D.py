@@ -202,13 +202,14 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
 
     points_and_angles = []
 
+    if mask.shape == depth.shape:
+        mask = np.expand_dims(mask, axis=0)
+
     if use_pcd:
 
         intrinsic = o3d.camera.PinholeCameraIntrinsic()
-        intrinsic.set_intrinsics(depth.shape[1], depth.shape[0], focal_length[0], focal_length[1], principal_point[0], principal_point[1])
-
-        if mask.shape == depth.shape:
-            mask = np.expand_dims(mask, axis=0)
+        intrinsic.set_intrinsics(depth.shape[1], depth.shape[0], focal_length[0], focal_length[1],
+                                 principal_point[0], principal_point[1])
 
         for j in range(mask.shape[0]):
             rgb_new = rgb.copy()
@@ -219,12 +220,7 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
             depth_new = np.multiply(depth_new, mask[j, :, :])
 
             # compute angle
-            # try:
             alpha = compute_angle_from_mask(mask[j])
-            # except:
-            #     alpha = 0
-
-            print(alpha*180/3.1415)
 
             # compute center
             rgb_new = o3d.geometry.Image(rgb_new)
@@ -255,7 +251,7 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
 
             center = [x, y, z]
 
-            alpha = compute_angle(mu, cnt)
+            alpha = compute_angle_from_mask(mask[j])
 
             # append the centroid and the angle of the considered mask in the list.
             points_and_angles.append([center, alpha])
