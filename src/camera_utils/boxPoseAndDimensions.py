@@ -313,9 +313,9 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
     # plot_3dpcd_with_vertices(vertices_pcd, real_vertices, inlier_cloud, pcd, centroid, dim_z)
 
     # --------------------------- print and return values -----------------------------------
-    print('Length: %.2f cm, Width: %.2f cm, Height: %.2f cm, ' % (dim[0] * 100, dim[1] * 100, dim[2] * 100))
-    print('X: %.2f m, Y: %.2f m, Z: %.2f m' % (centroid[0], centroid[1], centroid[2]))
-    print('th: %.2f rad = %.2f°' % (angle, angle * 180 / 3.14))
+    # print('Length: %.2f cm, Width: %.2f cm, Height: %.2f cm, ' % (dim[0] * 100, dim[1] * 100, dim[2] * 100))
+    # print('X: %.2f m, Y: %.2f m, Z: %.2f m' % (centroid[0], centroid[1], centroid[2]))
+    # print('th: %.2f rad = %.2f°' % (angle, angle * 180 / 3.14))
 
     # create a return structure
     box_pose_and_dim = {'dim': dim, 'centroid': centroid, 'angle': angle}
