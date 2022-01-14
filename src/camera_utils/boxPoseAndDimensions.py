@@ -241,8 +241,9 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
             # print('entering while with %s' % key)
             counter += 1
             if counter == 6:
-                dim = [0, 0, 0]
-                return dim
+                print("No good vertex has been found. "
+                      "Control if the box is positioned in a right position on the table")
+                raise AssertionError
             # search around the vertex point for a depth value different from zero
             for i in range(-counter, counter + 1):
                 for j in range(-counter, counter + 1):
