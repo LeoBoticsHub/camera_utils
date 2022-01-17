@@ -129,7 +129,7 @@ def compute_angle_from_vertices(vertices):
     return angle
 
 
-def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_distance):
+def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_distance, display=True):
 
     # convert image to np array todo: control if is useless
     rgb = np.asarray(rgb)
@@ -176,8 +176,9 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
     # order the vertices
     vertices = find_vertices_from_box(box)
 
-    # plot the mask with vertices
-    plot_mask_img_with_vertices(rect_mask, vertices)
+    # plot the mask with vertices MASK PLOTTING
+    if display:
+        plot_mask_img_with_vertices(rect_mask, vertices)
 
     # ------------- BOX POINT CLOUD ---------------
 
