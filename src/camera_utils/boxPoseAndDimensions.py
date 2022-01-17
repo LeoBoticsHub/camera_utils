@@ -203,7 +203,7 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
     try:  # TODO: evaluate to increase ransac_n and diminish num iterations
         plane_model, inliers = pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
     except Exception:
-        print('Error during plane generation')
+        print('\033[91mError during plane generation\033[0m')
         raise AssertionError  # to warn the main that the function has not worked
     if o3d.__version__ == '0.9.0.0':
         inlier_cloud = pcd.select_down_sample(inliers)
@@ -242,8 +242,8 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
             # print('entering while with %s' % key)
             counter += 1
             if counter == 6:
-                print("No good vertex has been found. "
-                      "Control if the box is positioned in a right position on the table")
+                print("\033[91mNo good vertex has been found. "
+                      "Control if the box is positioned in a right position on the table\033[0m")
                 raise AssertionError
             # search around the vertex point for a depth value different from zero
             for i in range(-counter, counter + 1):
