@@ -54,7 +54,7 @@ def plot_3dpcd_with_vertices(vertices_pcd, real_vertices, inlier_cloud, pcd, cen
     centroid.paint_uniform_color([1.0, 0, 0])
     centroid.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
     for point in vertices_pcd.values():
-        point.paint_uniform_color([1.0, 0, 0])
+        point.paint_uniform_color([0, 0, 1.0])
         point.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
     inlier_cloud.paint_uniform_color([0, 1.0, 0])
     inlier_cloud.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
@@ -64,8 +64,8 @@ def plot_3dpcd_with_vertices(vertices_pcd, real_vertices, inlier_cloud, pcd, cen
     pcd.paint_uniform_color([0.5, 0.5, 0.5])
     pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
     # pcd = pcd.voxel_down_sample(voxel_size=0.005)
-    o3d.visualization.draw_geometries([pcd, inlier_cloud, refined_pcd, vertices_pcd['UL'], vertices_pcd['UR'],
-                                       vertices_pcd['DL'], vertices_pcd['DR'], upper_centroid, centroid])
+    o3d.visualization.draw_geometries([pcd, inlier_cloud,  vertices_pcd['UL'], vertices_pcd['UR'],
+                                       vertices_pcd['DL'], vertices_pcd['DR'], refined_pcd, upper_centroid, centroid])
 
 
 def compute_2dvector_angle(vector):
@@ -196,7 +196,7 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
     rgb = o3d.geometry.Image(rgb)
     rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb, depth)
     pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
-    pcd = pcd.voxel_down_sample(voxel_size=0.005)
+    pcd = pcd.voxel_down_sample(voxel_size=0.002)
 
     # -------------PLANE SEGMENTATION TO REMOVE NOISY OUTLIERS----------------
 
@@ -212,7 +212,7 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
         inlier_cloud = pcd.select_by_index(inliers)
         # outlier_cloud = pcd.select_by_index(inliers, invert=True)
 
-    inlier_cloud = inlier_cloud.voxel_down_sample(voxel_size=0.005)
+    inlier_cloud = inlier_cloud.voxel_down_sample(voxel_size=0.002)
 
     # -------------- CENTROID and ANGLE-------------------
     # box upper surface centroid
@@ -229,6 +229,10 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
         point_mask = np.zeros(mask.shape)
         point_rgb = np.zeros(new_rgb.shape)
 
+        if point[1] < 0 or point[1] > height or point[0] < 0 or point[0] > width:
+               print("\033[91mMask out of field of view\033[0m")
+               raise AssertionError
+               
         # change a single value of the mask to one in order to have only the vertex position on the mask
         point_mask[point[1], point[0]] = 1
 
@@ -242,8 +246,7 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
             # print('entering while with %s' % key)
             counter += 1
             if counter == 6:
-                print("\033[91mNo good vertex has been found. "
-                      "Control if the box is positioned in a right position on the table\033[0m")
+                print("\033[91mNo good vertex has been found.\033[0m")
                 raise AssertionError
             # search around the vertex point for a depth value different from zero
             for i in range(-counter, counter + 1):
