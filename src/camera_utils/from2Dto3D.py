@@ -141,7 +141,7 @@ def compute_angle_from_mask(mask):
     @return:
          the angle [rad] of the objects
     '''
-    # TODO: Compute the angle using the vertices of the box)
+
     cnt, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     max_area = 0

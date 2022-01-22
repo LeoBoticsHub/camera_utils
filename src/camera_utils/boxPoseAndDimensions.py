@@ -302,7 +302,6 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
     side1 = np.mean([left_side, right_side])
     side2 = np.mean([down_side, up_side])
 
-    # TODO: evaluate to use the z found with the pcd.get_center() == centroid[2]
     # min_z = np.min(np.asarray(inlier_cloud.points)[:, 2])
     min_z = centroid[2]
 
