@@ -229,7 +229,7 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
         point_mask = np.zeros(mask.shape)
         point_rgb = np.zeros(new_rgb.shape)
 
-        if point[1] < 0 or point[1] > height or point[0] < 0 or point[0] > width:
+        if point[1] < 0 or point[1] >= height or point[0] < 0 or point[0] >= width:
                print("\033[91mMask out of field of view\033[0m")
                raise AssertionError
                
@@ -251,7 +251,8 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
             # search around the vertex point for a depth value different from zero
             for i in range(-counter, counter + 1):
                 for j in range(-counter, counter + 1):
-                    # print(i, j)
+                    if point[1] + i < 0 or point[1] + i >= height or point[0] + j < 0 or point[0] + j >= width:
+                        continue
                     point_mask = np.zeros(mask.shape)
                     point_mask[point[1] + i, point[0] + j] = 1
                     point_depth = np.multiply(depth, point_mask)
@@ -302,7 +303,6 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
     side1 = np.mean([left_side, right_side])
     side2 = np.mean([down_side, up_side])
 
-    # TODO: evaluate to use the z found with the pcd.get_center() == centroid[2]
     # min_z = np.min(np.asarray(inlier_cloud.points)[:, 2])
     min_z = centroid[2]
 
