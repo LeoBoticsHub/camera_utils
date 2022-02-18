@@ -42,7 +42,7 @@ def compute_mu(cnt, rgb=None, depth=None):
         y_sum += cont[0, 1]
 
     mu = [int(x_sum / cnt[0].shape[0]), int(y_sum / cnt[0].shape[0])]
-    if rgb is None and depth is None:
+    if rgb is not None and depth is not None:
         new_x = (float(mu[0]) / rgb.shape[0]) * depth.shape[0]
         new_y = (float(mu[1]) / rgb.shape[1]) * depth.shape[1]
     else:
