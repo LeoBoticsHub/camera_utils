@@ -53,6 +53,25 @@ def compute_mu(cnt, rgb=None, depth=None):
 
     return mu
 
+def compute_centroid_from_mask(mask):
+    """
+    Compute centroids given a binary mask.
+
+    @param mask: binary mask (only 0 and 1) in numpy array
+    """
+    _num_cc, cc_labels, stats, centroids = cv2.connectedComponentsWithStats(mask, 8)
+    if stats[1:, -1].size == 0:
+        return
+    largest_component_id = np.argmax(stats[1:, -1]) + 1
+
+    # draw text on the largest component, as well as other very large components.
+    for cid in range(1, _num_cc):
+        if cid == largest_component_id or stats[cid, -1] > _LARGE_MASK_AREA_THRESH:
+            # median is more stable than centroid
+            center = np.median((cc_labels == cid).nonzero(), axis=1)[::-1]
+
+    return center
+
 
 def compute_angle(mu, cnt):
     '''
