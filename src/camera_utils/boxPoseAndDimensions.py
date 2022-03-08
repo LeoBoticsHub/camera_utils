@@ -129,7 +129,7 @@ def compute_angle_from_vertices(vertices):
     return angle
 
 
-def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_distance, display=True):
+def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_distance, display=True, only_pose=False):
 
     # convert image to np array todo: control if is useless
     rgb = np.asarray(rgb)
@@ -221,108 +221,112 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
 
     # --------------- DIMENSIONS ------------------------
 
-    # 3D vertices searching
-    vertices_pcd = {}
-    for vertex_id, point in vertices.items():
+    if only_pose:  # if you want only posisiton and orientation
+        box_pose_and_dim = {'dim': [0, 0, 0], 'centroid': centroid, 'angle': angle}
 
-        # initialize mask and rgb for points
-        point_mask = np.zeros(mask.shape)
-        point_rgb = np.zeros(new_rgb.shape)
+    else:  # if you want also dimensions
+        # 3D vertices searching
+        vertices_pcd = {}
+        for vertex_id, point in vertices.items():
 
-        if point[1] < 0 or point[1] >= height or point[0] < 0 or point[0] >= width:
-               print("\033[91mMask out of field of view\033[0m")
-               raise AssertionError
-               
-        # change a single value of the mask to one in order to have only the vertex position on the mask
-        point_mask[point[1], point[0]] = 1
+            # initialize mask and rgb for points
+            point_mask = np.zeros(mask.shape)
+            point_rgb = np.zeros(new_rgb.shape)
 
-        # lets extract the point position
-        point_depth = np.multiply(depth, point_mask)
+            if point[1] < 0 or point[1] >= height or point[0] < 0 or point[0] >= width:
+                   print("\033[91mMask out of field of view\033[0m")
+                   raise AssertionError
 
-        # If the point found on the depth has a zero value we need to found another value different from zero around
-        # the point found
-        counter = 0
-        while np.sum(point_depth) == 0:
-            # print('entering while with %s' % key)
-            counter += 1
-            if counter == 6:
-                print("\033[91mNo good vertex has been found.\033[0m")
-                raise AssertionError
-            # search around the vertex point for a depth value different from zero
-            for i in range(-counter, counter + 1):
-                for j in range(-counter, counter + 1):
-                    if point[1] + i < 0 or point[1] + i >= height or point[0] + j < 0 or point[0] + j >= width:
+            # change a single value of the mask to one in order to have only the vertex position on the mask
+            point_mask[point[1], point[0]] = 1
+
+            # lets extract the point position
+            point_depth = np.multiply(depth, point_mask)
+
+            # If the point found on the depth has a zero value we need to found another value different from zero around
+            # the point found
+            counter = 0
+            while np.sum(point_depth) == 0:
+                # print('entering while with %s' % key)
+                counter += 1
+                if counter == 6:
+                    print("\033[91mNo good vertex has been found.\033[0m")
+                    raise AssertionError
+                # search around the vertex point for a depth value different from zero
+                for i in range(-counter, counter + 1):
+                    for j in range(-counter, counter + 1):
+                        if point[1] + i < 0 or point[1] + i >= height or point[0] + j < 0 or point[0] + j >= width:
+                            continue
+                        point_mask = np.zeros(mask.shape)
+                        point_mask[point[1] + i, point[0] + j] = 1
+                        point_depth = np.multiply(depth, point_mask)
+                        if np.sum(point_depth) != 0:
+                            break
+                    else:
                         continue
-                    point_mask = np.zeros(mask.shape)
-                    point_mask[point[1] + i, point[0] + j] = 1
-                    point_depth = np.multiply(depth, point_mask)
-                    if np.sum(point_depth) != 0:
-                        break
-                else:
-                    continue
-                break
+                    break
 
-        # extract rgb
-        for j in range(3):
-            point_rgb[:, :, j] = np.multiply(new_rgb[:, :, j], point_mask)
+            # extract rgb
+            for j in range(3):
+                point_rgb[:, :, j] = np.multiply(new_rgb[:, :, j], point_mask)
 
-        point_rgb = np.array(point_rgb, dtype=np.uint8)
-        point_depth = np.array(point_depth, dtype=np.uint16)
+            point_rgb = np.array(point_rgb, dtype=np.uint8)
+            point_depth = np.array(point_depth, dtype=np.uint16)
 
-        point_rgb = o3d.geometry.Image(point_rgb)
-        point_depth = o3d.geometry.Image(point_depth)
+            point_rgb = o3d.geometry.Image(point_rgb)
+            point_depth = o3d.geometry.Image(point_depth)
 
-        point_rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(point_rgb, point_depth)
-        point_cloud = o3d.geometry.PointCloud.create_from_rgbd_image(point_rgbd, intrinsic)
+            point_rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(point_rgb, point_depth)
+            point_cloud = o3d.geometry.PointCloud.create_from_rgbd_image(point_rgbd, intrinsic)
 
-        vertices_pcd[vertex_id] = point_cloud
+            vertices_pcd[vertex_id] = point_cloud
 
-    # ---------------FIND THE NEAREST POINT TO THE 3D VERTICES IN THE SEGMENTED PLANE---------------
+        # ---------------FIND THE NEAREST POINT TO THE 3D VERTICES IN THE SEGMENTED PLANE---------------
 
-    real_vertices = {}
-    min_distance = {}
-    for vertex_id in vertices_pcd.keys():
-        min_distance[vertex_id] = 1000000
+        real_vertices = {}
+        min_distance = {}
+        for vertex_id in vertices_pcd.keys():
+            min_distance[vertex_id] = 1000000
 
-    for point in inlier_cloud.points:
-        for vertex_id, pcd_point in vertices_pcd.items():
-            # pdb.set_trace()
-            pcd_point = pcd_point.points[0][:2]
-            distance = np.linalg.norm(pcd_point - point[:2])
+        for point in inlier_cloud.points:
+            for vertex_id, pcd_point in vertices_pcd.items():
+                # pdb.set_trace()
+                pcd_point = pcd_point.points[0][:2]
+                distance = np.linalg.norm(pcd_point - point[:2])
 
-            if distance < min_distance[vertex_id]:
-                min_distance[vertex_id] = distance
-                real_vertices[vertex_id] = point
+                if distance < min_distance[vertex_id]:
+                    min_distance[vertex_id] = distance
+                    real_vertices[vertex_id] = point
 
-    # ---------------------COMPUTE DIMENSIONS-----------------------
-    left_side = np.linalg.norm(real_vertices['DL'] - real_vertices['UL'])
-    down_side = np.linalg.norm(real_vertices['DL'] - real_vertices['DR'])
-    up_side = np.linalg.norm(real_vertices['UL'] - real_vertices['UR'])
-    right_side = np.linalg.norm(real_vertices['UR'] - real_vertices['DR'])
+        # ---------------------COMPUTE DIMENSIONS-----------------------
+        left_side = np.linalg.norm(real_vertices['DL'] - real_vertices['UL'])
+        down_side = np.linalg.norm(real_vertices['DL'] - real_vertices['DR'])
+        up_side = np.linalg.norm(real_vertices['UL'] - real_vertices['UR'])
+        right_side = np.linalg.norm(real_vertices['UR'] - real_vertices['DR'])
 
-    side1 = np.mean([left_side, right_side])
-    side2 = np.mean([down_side, up_side])
+        side1 = np.mean([left_side, right_side])
+        side2 = np.mean([down_side, up_side])
 
-    # min_z = np.min(np.asarray(inlier_cloud.points)[:, 2])
-    min_z = centroid[2]
+        # min_z = np.min(np.asarray(inlier_cloud.points)[:, 2])
+        min_z = centroid[2]
 
-    dim_x = max(side1, side2)
-    dim_y = min(side1, side2)
-    # # dimZ = max_z - min_z
-    dim_z = cam2plane_distance - min_z
+        dim_x = max(side1, side2)
+        dim_y = min(side1, side2)
+        # # dimZ = max_z - min_z
+        dim_z = cam2plane_distance - min_z
 
-    dim = [dim_x, dim_y, dim_z]
+        dim = [dim_x, dim_y, dim_z]
 
-    # -------- Print plane segmented with real 3d vertices plus original pcd and vertices----------
-    # plot_3dpcd_with_vertices(vertices_pcd, real_vertices, inlier_cloud, pcd, centroid, dim_z)
+        # create a return structure
+        box_pose_and_dim = {'dim': dim, 'centroid': centroid, 'angle': angle}
 
-    # --------------------------- print and return values -----------------------------------
-    # print('Length: %.2f cm, Width: %.2f cm, Height: %.2f cm, ' % (dim[0] * 100, dim[1] * 100, dim[2] * 100))
-    # print('X: %.2f m, Y: %.2f m, Z: %.2f m' % (centroid[0], centroid[1], centroid[2]))
-    # print('th: %.2f rad = %.2f°' % (angle, angle * 180 / 3.14))
+        # -------- Print plane segmented with real 3d vertices plus original pcd and vertices----------
+        # plot_3dpcd_with_vertices(vertices_pcd, real_vertices, inlier_cloud, pcd, centroid, dim_z)
 
-    # create a return structure
-    box_pose_and_dim = {'dim': dim, 'centroid': centroid, 'angle': angle}
+        # --------------------------- print and return values -----------------------------------
+        # print('Length: %.2f cm, Width: %.2f cm, Height: %.2f cm, ' % (dim[0] * 100, dim[1] * 100, dim[2] * 100))
+        # print('X: %.2f m, Y: %.2f m, Z: %.2f m' % (centroid[0], centroid[1], centroid[2]))
+        # print('th: %.2f rad = %.2f°' % (angle, angle * 180 / 3.14))
 
     return box_pose_and_dim
 
