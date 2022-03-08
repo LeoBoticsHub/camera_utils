@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import math
 
+_LARGE_MASK_AREA_THRESH = 120000
 
 def extract_contours(rgb):
     """
@@ -52,6 +53,7 @@ def compute_mu(cnt, rgb=None, depth=None):
     mu = [round(new_x), round(new_y)]
 
     return mu
+
 
 def compute_centroid_from_mask(mask):
     """
