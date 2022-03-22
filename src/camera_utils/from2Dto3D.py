@@ -247,7 +247,7 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
             rgb_new = o3d.geometry.Image(rgb_new)
             depth_new = o3d.geometry.Image(depth_new)
 
-            rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb_new, depth_new)
+            rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb_new, depth_new, depth_trunc=12)
             pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
 
             center = pcd.get_center()
