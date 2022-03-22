@@ -280,6 +280,9 @@ class Zed(Camera):
             color_frame_right = np.asanyarray(color_frame_right.get_data())[:, :, :3]
             return [color_frame_left, color_frame_right], depth_frame
 
+    def get_aligned_frames(self):
+        return self.get_frames()
+
     def set_option(self, option, value):
         '''
         :param option: the option to be set (sl.)
