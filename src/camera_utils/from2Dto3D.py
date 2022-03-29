@@ -214,7 +214,7 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
 
     if mask is None or mask.shape[0] == 0:
         points_and_angles = [[[0, 0, 0], 0]]
-        print("No mask detected!")
+        #print("No mask detected!")
         return points_and_angles
     # convert image to np array
     rgb = np.asarray(rgb)
