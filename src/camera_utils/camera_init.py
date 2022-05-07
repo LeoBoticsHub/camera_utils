@@ -58,7 +58,8 @@ class Camera:
 
 class IntelRealsense(Camera):
 
-    def __init__(self, rgb_resolution=Camera.Resolution.FullHD, depth_resolution=Camera.Resolution.HD, fps=30, serial_number=""):
+    def __init__(self, rgb_resolution=Camera.Resolution.FullHD, depth_resolution=Camera.Resolution.HD, fps=30,
+                 serial_number="", depth_in_meters=False):
 
         self.camera_name = "Intel Realsense"
         Camera.__init__(self, rgb_resolution, depth_resolution, fps, serial_number)
@@ -83,7 +84,10 @@ class IntelRealsense(Camera):
         profile = cfg.get_stream(rs.stream.color)
         intr = profile.as_video_stream_profile().get_intrinsics()
         self.intr = {'fx': intr.fx, 'fy': intr.fy, 'px': intr.ppx, 'py': intr.ppy}
-        self.mm2m_convesion = 1000
+        if depth_in_meters:
+            self.mm2m_convesion = 1000
+        else:
+            self.mm2m_convesion = 1
 
         print("%s camera configured.\n" % self.camera_name)
 
