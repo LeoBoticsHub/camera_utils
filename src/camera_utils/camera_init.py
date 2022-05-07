@@ -83,6 +83,7 @@ class IntelRealsense(Camera):
         profile = cfg.get_stream(rs.stream.color)
         intr = profile.as_video_stream_profile().get_intrinsics()
         self.intr = {'fx': intr.fx, 'fy': intr.fy, 'px': intr.ppx, 'py': intr.ppy}
+        self.mm2m_convesion = 1000
 
         print("%s camera configured.\n" % self.camera_name)
 
@@ -110,7 +111,7 @@ class IntelRealsense(Camera):
         while not depth_frame:
             frames = self.pipeline.wait_for_frames()
             depth_frame = frames.get_depth_frame()
-        depth_frame = np.asanyarray(depth_frame.get_data())
+        depth_frame = np.asanyarray(depth_frame.get_data()) / self.mm2m_convesion
         return depth_frame
 
     def get_frames(self):
@@ -122,7 +123,7 @@ class IntelRealsense(Camera):
             frames = self.pipeline.wait_for_frames()
             depth_frame_cam = frames.get_depth_frame()
             color_frame_cam = frames.get_color_frame()
-        depth_frame = np.asanyarray(depth_frame_cam.get_data())
+        depth_frame = np.asanyarray(depth_frame_cam.get_data()) / self.mm2m_convesion
         color_frame = np.asanyarray(color_frame_cam.get_data())
 
         return color_frame, depth_frame
@@ -138,7 +139,7 @@ class IntelRealsense(Camera):
             aligned_frames = align.process(frames)
             color_frame_cam = aligned_frames.first(rs.stream.color)
             depth_frame_cam = aligned_frames.get_depth_frame()
-        depth_frame = np.asanyarray(depth_frame_cam.get_data())
+        depth_frame = np.asanyarray(depth_frame_cam.get_data()) / self.mm2m_convesion
         color_frame = np.asanyarray(color_frame_cam.get_data())
 
         return color_frame, depth_frame
