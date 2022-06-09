@@ -116,8 +116,8 @@ class IntelRealsense(Camera):
         while not depth_frame:
             frames = self.pipeline.wait_for_frames()
             depth_frame = frames.get_depth_frame()
-        depth_frame = np.asanyarray(depth_frame.get_data()) / self.mm2m_conversion
-        return depth_frame
+        depth_frame = np.asanyarray(depth_frame.get_data(), dtype=np.uint16) 
+        return np.asanyarray(depth_frame / self.mm2m_conversion, dtype=np.uint16)
 
     def get_frames(self):
         '''
@@ -131,7 +131,7 @@ class IntelRealsense(Camera):
         depth_frame = np.asanyarray(depth_frame_cam.get_data()) / self.mm2m_conversion
         color_frame = np.asanyarray(color_frame_cam.get_data())
 
-        return color_frame, depth_frame
+        return color_frame, np.asanyarray(depth_frame / self.mm2m_conversion, dtype=np.uint16)
 
     def get_aligned_frames(self):
         '''
@@ -147,8 +147,8 @@ class IntelRealsense(Camera):
         depth_frame = np.asanyarray(depth_frame_cam.get_data()) / self.mm2m_conversion
         color_frame = np.asanyarray(color_frame_cam.get_data())
 
-        return color_frame, depth_frame
-
+        return color_frame, np.asanyarray(depth_frame / self.mm2m_conversion, dtype=np.uint16)
+        
     def set_option(self, option, value):
         '''
         :param option: the option to be set (rs.option.OPTION_NAME)
