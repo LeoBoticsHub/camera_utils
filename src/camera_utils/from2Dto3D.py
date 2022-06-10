@@ -239,14 +239,17 @@ def compute_centroids(rgb, depth, mask, intrinsics, use_pcd=True):
                 rgb_new[:, :, i] = np.multiply(rgb[:, :, i], mask[j, :, :])
             depth_new = np.multiply(depth_new, mask[j, :, :])
 
+            rgb_new = rgb_new.astype(np.uint8)
+            depth_new = depth_new.astype(np.uint16)
+
             # compute angle
             alpha = compute_angle_from_mask(mask[j])
 
             # compute center
-            rgb_new = o3d.geometry.Image(rgb_new)
-            depth_new = o3d.geometry.Image(depth_new)
+            rgb_o3d = o3d.geometry.Image(rgb_new)
+            depth_o3d = o3d.geometry.Image(depth_new)
 
-            rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb_new, depth_new, depth_trunc=12)
+            rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb_o3d, depth_o3d, depth_trunc=12)
             pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, intrinsic)
 
             center = pcd.get_center()
