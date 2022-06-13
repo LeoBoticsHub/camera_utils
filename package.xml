@@ -4,9 +4,6 @@
   <version>0.0.0</version>
   <description>The camera_utils package</description>
 
-  <!-- One maintainer tag required, multiple allowed, one person per tag -->
-  <!-- Example:  -->
-  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
   <maintainer email="rollo.f96@gmail.com">Federico Rollo</maintainer>
   <maintainer email="gennaro.raiola@gmail.com">Gennaro Raiola</maintainer>
   <maintainer email="andrea.zunino89@gmail.com">Andrea Zunino</maintainer>
@@ -17,10 +14,6 @@
 
   <license>GNU General Public License v3.0</license>
 
-
-  <!-- Url tags are optional, but multiple are allowed, one per tag -->
-  <!-- Optional attribute type can be: website, bugtracker, or repository -->
-  <!-- Example: -->
   <!-- <url type="website">http://wiki.ros.org/camera_utils</url> -->
 
   <buildtool_depend>catkin</buildtool_depend>
