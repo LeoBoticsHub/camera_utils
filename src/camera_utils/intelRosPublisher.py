@@ -4,7 +4,7 @@ import select
 import sys
 
 # function used to stop loop functions
-def stop_loop(stop_entry: str) -> bool:
+def stop_loop(stop_entry):
     '''
     Used to quit an infinite loop with a char/string entry
     '''
@@ -16,6 +16,8 @@ def stop_loop(stop_entry: str) -> bool:
 if __name__ == "__main__":
 
     camera = IntelRosWrapper()
+    
+    print("\nRunning\nTo quit the program press q and then Enter.")
 
     while not stop_loop('q'):
 
