@@ -69,7 +69,7 @@ class IntelRosWrapper(IntelRealsense):
 
     def get_intrinsics(self):
 
-        intr =  super().get_intrinsics()
+        intr =  IntelRealsense.get_intrinsics(self)
 
         camera_info = CameraInfo()
 
