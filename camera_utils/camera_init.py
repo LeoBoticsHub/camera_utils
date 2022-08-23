@@ -58,7 +58,7 @@ class Camera:
 
 class IntelRealsense(Camera):
 
-    def __init__(self, rgb_resolution=Camera.Resolution.FullHD, depth_resolution=Camera.Resolution.HD, fps=30,
+    def __init__(self, rgb_resolution=Camera.Resolution.HD, depth_resolution=Camera.Resolution.HD, fps=30,
                  serial_number="", depth_in_meters=False):
 
         self.camera_name = "Intel Realsense"
@@ -79,7 +79,11 @@ class IntelRealsense(Camera):
             config.enable_stream(rs.stream.color, 1920, 1080, rs.format.bgr8, self.fps)  # max 1920x1080 at 30 fps
 
         # Start streaming
-        cfg = self.pipeline.start(config)
+        try:
+            cfg = self.pipeline.start(config)
+        except RuntimeError:
+            print("\n\033[1;31;40mError during camera starting.\nMake sure to have set the right RGB camera resolution. Some cameras doesn't have FullHD resolution (e.g. Intel Realsense D455)\033[0m\n")
+            exit(1)
 
         profile = cfg.get_stream(rs.stream.color)
         intr = profile.as_video_stream_profile().get_intrinsics()
@@ -93,8 +97,12 @@ class IntelRealsense(Camera):
         print("%s camera configured.\n" % self.camera_name)
 
     def __del__(self):
-        self.pipeline.stop()
-        print("%s camera closed" % self.camera_name)
+        try:
+            self.pipeline.stop()
+            print("%s camera closed" % self.camera_name)
+        except RuntimeError as ex:
+            print("\033[0;33;40mException (%s): %s\033[0m" % (type(ex).__name__, ex))
+        
 
     def get_rgb(self):
         '''
@@ -173,7 +181,7 @@ class IntelRealsense(Camera):
             value = sensor.get_option(option)
             print("Option %s value: %d" % (option_name, int(value)))
         except TypeError as ex:
-            print("\033[0;33;40m Exception (%s): the option %s has NOT been set." % (type(ex).__name__, option_name))
+            print("\033[1;33;40m Exception (%s): the option %s has NOT been set." % (type(ex).__name__, option_name))
 
 
 class Zed(Camera):
