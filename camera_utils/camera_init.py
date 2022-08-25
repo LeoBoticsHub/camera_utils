@@ -82,7 +82,7 @@ class IntelRealsense(Camera):
         try:
             cfg = self.pipeline.start(config)
         except RuntimeError:
-            print("\n\033[1;31;40mError during camera starting.\nMake sure to have set the right RGB camera resolution. Some cameras doesn't have FullHD resolution (e.g. Intel Realsense D455)\033[0m\n")
+            print("\n\033[1;31;40mError during camera initialization.\nMake sure to have set the right RGB camera resolution. Some cameras doesn't have FullHD resolution (e.g. Intel Realsense D455).\nIf you have connected more cameras make sure to insert the serial numbers to distinguish cameras during initialization.\033[0m\n")
             exit(1)
 
         profile = cfg.get_stream(rs.stream.color)
