@@ -55,6 +55,24 @@ class Camera:
         '''
         return self.fps
 
+    def get_rgb(self):
+        raise NotImplementedError
+
+    def get_depth(self):
+        raise NotImplementedError
+
+    def get_frames(self):
+        raise NotImplementedError
+
+    def get_aligned_frames(self):
+        raise NotImplementedError
+    
+    def set_option(self, option, value):
+        raise NotImplementedError
+
+    def get_option(self, option):
+        raise NotImplementedError
+
 
 class IntelRealsense(Camera):
 
