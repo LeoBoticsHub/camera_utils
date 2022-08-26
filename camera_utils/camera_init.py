@@ -112,12 +112,12 @@ class IntelRealsense(Camera):
         else:
             self.mm2m_conversion = 1
 
-        print("%s camera configured.\n" % self.camera_name)
+        print("%s %s camera configured.\n" % (self.camera_name, self.serial_number))
 
     def __del__(self):
         try:
             self.pipeline.stop()
-            print("%s camera closed" % self.camera_name)
+            print("%s %s camera closed" % (self.camera_name, self.serial_number))
         except RuntimeError as ex:
             print("\033[0;33;40mException (%s): %s\033[0m" % (type(ex).__name__, ex))
         
@@ -204,7 +204,7 @@ class IntelRealsense(Camera):
 
 class Zed(Camera):
 
-    single_camera_mode = True
+    # single_camera_mode = True
 
     def __init__(self, single_camera_mode=True, rgb_resolution=Camera.Resolution.FullHD,
                  depth_resolution=Camera.Resolution.FullHD, fps=30, serial_number=""):
