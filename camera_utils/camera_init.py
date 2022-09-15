@@ -223,6 +223,9 @@ class Zed(Camera):
         # set initial parameters
         init_params = sl.InitParameters()
 
+        if self.serial_number != "":
+            init_params.set_from_serial_number(self.serial_number)
+
         # set resolution
         if self.rgb_resolution == Camera.Resolution.QHD:
             init_params.camera_resolution = sl.RESOLUTION.HD2K
