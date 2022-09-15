@@ -241,7 +241,7 @@ class Zed(Camera):
         # start the camera
         err = self.pipeline.open(init_params)
         if err != sl.ERROR_CODE.SUCCESS:
-            print("ERROR: problem starting the camera")
+            print("ERROR: problem starting the camera. Check connection and initialization parameters.")
             exit()
 
         # get intrinsics
