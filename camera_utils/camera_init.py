@@ -90,12 +90,12 @@ class IntelRealsense(Camera):
             config.enable_device(self.serial_number)
 
         # set resolutions
-        config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, self.fps)  # max 1280x720 at 90 fps
-        if self.rgb_resolution == Camera.Resolution.HD:
+        config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, self.fps)  # max 1280x720 at 90 fps        
+        if self.rgb_resolution == Camera.Resolution.HD: # max 1920x1080 at 30 fps
             config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, self.fps)  # max 1920x1080 at 30 fps
         else:
             config.enable_stream(rs.stream.color, 1920, 1080, rs.format.bgr8, self.fps)  # max 1920x1080 at 30 fps
-
+        
         # Start streaming
         try:
             cfg = self.pipeline.start(config)
@@ -105,7 +105,7 @@ class IntelRealsense(Camera):
 
         profile = cfg.get_stream(rs.stream.color)
         intr = profile.as_video_stream_profile().get_intrinsics()
-        self.intr = {'fx': intr.fx, 'fy': intr.fy, 'px': intr.ppx, 'py': intr.ppy}
+        self.intr = {'fx': intr.fx, 'fy': intr.fy, 'px': intr.ppx, 'py': intr.ppy, 'width': intr.width, 'height': intr.height}
 
         if depth_in_meters:
             self.mm2m_conversion = 1000
@@ -249,13 +249,20 @@ class Zed(Camera):
         left_intr = zed_params.left_cam
 
         if self.single_camera_mode:
-            self.intr = {'fx': left_intr.fx, 'fy': left_intr.fy, 'px': left_intr.cx, 'py': left_intr.cy}
+            self.intr = {
+                'fx': left_intr.fx, 'fy': left_intr.fy, 
+                'px': left_intr.cx, 'py': left_intr.cy, 
+                'width': left_intr.image_size.width, 'height': left_intr.image_size.heigth
+            }
         else:
             right_intr = zed_params.right_cam
             self.intr = {'fx': [left_intr.fx, right_intr.fx],
                          'fy': [left_intr.fy, right_intr.fy],
                          'px': [left_intr.cx, right_intr.cx],
-                         'py': [left_intr.cy, right_intr.cy]}
+                         'py': [left_intr.cy, right_intr.cy],
+                         'width': [left_intr.image_size.width, right_intr.image_size.width],
+                         'height': [left_intr.image_size.height, right_intr.image_size.height]
+                        }
 
         print("%s camera configured.\n" % self.camera_name)
 
