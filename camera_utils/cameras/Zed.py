@@ -1,0 +1,153 @@
+import numpy as np
+from camera_utils.cameras.CameraInterface import Camera
+
+try:
+    import pyzed.sl as sl
+except ImportError:
+    print("\033[91mpyzed.sl module not found. Please install the ZED SDK to use this module.\033[0m")
+    exit(1)
+
+
+class Zed(Camera):
+
+    def __init__(self, single_camera_mode=True, rgb_resolution=Camera.Resolution.FullHD,
+                 depth_resolution=Camera.Resolution.FullHD, fps=30, serial_number=""):
+        '''
+        :param single_camera_mode: boolean to choose if using the camera as a single camera or a dual camera (two images ...)
+        :param rgb_resolution: the rgb resolution of the camera (e.g., Zed.Resolution.HD)
+        :param depth_resolution: the depth resolution of the camera (e.g., Zed.Resolution.HD)
+        :param fps: the camera frames per second
+        :param serial_number: the camera serial number
+        '''
+        self.camera_name = "ZED"
+        Camera.__init__(self, rgb_resolution, depth_resolution, fps, serial_number)
+
+        self.single_camera_mode = single_camera_mode
+        self.pipeline = sl.Camera()
+        # set initial parameters
+        init_params = sl.InitParameters()
+
+        if self.serial_number != "":
+            init_params.set_from_serial_number(self.serial_number)
+
+        # set resolution
+        if self.rgb_resolution == Camera.Resolution.QHD:
+            init_params.camera_resolution = sl.RESOLUTION.HD2K
+            if self.fps > 15:
+                self.fps = 15
+        elif self.rgb_resolution == Camera.Resolution.HD:
+            init_params.camera_resolution = sl.RESOLUTION.HD720
+        else:
+            init_params.camera_resolution = sl.RESOLUTION.HD1080
+
+        init_params.camera_fps = self.fps
+
+        # start the camera
+        err = self.pipeline.open(init_params)
+        if err != sl.ERROR_CODE.SUCCESS:
+            print("ERROR: problem starting the camera. Check connection and initialization parameters.")
+            exit()
+
+        # get intrinsics
+        zed_params = self.pipeline.get_camera_information().calibration_parameters
+        left_intr = zed_params.left_cam
+
+        if self.single_camera_mode:
+            self.intr = {
+                'fx': left_intr.fx, 'fy': left_intr.fy, 
+                'px': left_intr.cx, 'py': left_intr.cy, 
+                'width': left_intr.image_size.width, 'height': left_intr.image_size.height
+            }
+        else:
+            right_intr = zed_params.right_cam
+            self.intr = {'fx': [left_intr.fx, right_intr.fx],
+                         'fy': [left_intr.fy, right_intr.fy],
+                         'px': [left_intr.cx, right_intr.cx],
+                         'py': [left_intr.cy, right_intr.cy],
+                         'width': [left_intr.image_size.width, right_intr.image_size.width],
+                         'height': [left_intr.image_size.height, right_intr.image_size.height]
+                        }
+
+        print("%s camera configured.\n" % self.camera_name)
+
+    def __del__(self):
+        self.pipeline.close()
+        print("%s camera closed" % self.camera_name)
+
+    def get_rgb(self):
+        '''
+        :return: An rgb image as numpy array or [left, right] rgb images depending on camera mode (single or double)
+        '''
+        color_frame_left = sl.Mat()
+        runtime_parameters = sl.RuntimeParameters()
+        if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+            self.pipeline.retrieve_image(color_frame_left, sl.VIEW.LEFT)
+        color_frame_left = np.asanyarray(color_frame_left.get_data())[:, :, :3]
+        if self.single_camera_mode:
+            return color_frame_left
+        else:
+            color_frame_right = sl.Mat()
+            if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+                self.pipeline.retrieve_image(color_frame_right, sl.VIEW.RIGHT)
+            color_frame_right = np.asanyarray(color_frame_right.get_data())[:, :, :3]
+            return color_frame_left, color_frame_right
+
+    def get_depth(self):
+        '''
+        :return: A depth image as numpy array or [left, right] depth images depending on camera mode (single or double)
+        '''
+        depth_frame = sl.Mat()
+        runtime_parameters = sl.RuntimeParameters()
+        if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+            self.pipeline.retrieve_measure(depth_frame, sl.MEASURE.DEPTH)
+        depth_frame = np.asanyarray(depth_frame.get_data())
+        depth_frame = np.nan_to_num(depth_frame)
+        return depth_frame
+
+    def get_frames(self):
+        '''
+        :return: rgb, depth image as numpy array or [left rgb, right rgb], depth images depending on camera mode
+        '''
+        color_frame_left = sl.Mat()
+        depth_frame = sl.Mat()
+        runtime_parameters = sl.RuntimeParameters()
+        if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+            self.pipeline.retrieve_image(color_frame_left, sl.VIEW.LEFT)
+            self.pipeline.retrieve_measure(depth_frame, sl.MEASURE.DEPTH)
+        depth_frame = np.asanyarray(depth_frame.get_data())
+        depth_frame = np.nan_to_num(depth_frame)
+        color_frame_left = np.asanyarray(color_frame_left.get_data())[:, :, :3]
+        if self.single_camera_mode:
+            return color_frame_left, depth_frame
+        else:
+            color_frame_right = sl.Mat()
+            if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+                self.pipeline.retrieve_image(color_frame_right, sl.VIEW.RIGHT)
+            color_frame_right = np.asanyarray(color_frame_right.get_data())[:, :, :3]
+            return [color_frame_left, color_frame_right], depth_frame
+
+    def get_aligned_frames(self):
+        return self.get_frames()
+
+    def set_option(self, option, value):
+        '''
+        :param option: the option to be set (sl.)
+        :param value: the value of the option
+        '''
+        option_name = str(option).replace('VIDEO_SETTINGS.', '').upper()
+        try:
+            self.pipeline.set_camera_settings(option, value)
+            print("Option %s changed to value: %d" % (option_name, int(value)))
+        except TypeError as ex:
+            print("\033[0;33;40m Exception (%s): the option %s has NOT been set." % (type(ex).__name__, option_name))
+
+    def get_option(self, option):
+        '''
+        :param option: the option to be got (sl.)
+        '''
+        option_name = str(option).replace('VIDEO_SETTINGS.', '').upper()
+        try:
+            value = self.pipeline.get_camera_settings(option)
+            print("Option %s value: %d" % (option_name, int(value)))
+        except TypeError as ex:
+            print("\033[0;33;40m Exception (%s): the option %s has NOT been set." % (type(ex).__name__, option_name))
