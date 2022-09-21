@@ -252,7 +252,7 @@ class Zed(Camera):
             self.intr = {
                 'fx': left_intr.fx, 'fy': left_intr.fy, 
                 'px': left_intr.cx, 'py': left_intr.cy, 
-                'width': left_intr.image_size.width, 'height': left_intr.image_size.heigth
+                'width': left_intr.image_size.width, 'height': left_intr.image_size.height
             }
         else:
             right_intr = zed_params.right_cam
