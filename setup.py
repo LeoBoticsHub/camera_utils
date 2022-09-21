@@ -1,11 +1,11 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 package_name = 'camera_utils'
 
 setup(
     name=package_name,
     version='1.0.0',
-    packages=[package_name],
+    packages=find_packages(),
     data_files=[],
     install_requires=['setuptools', 'numpy', 'open3d', 'pyrealsense2', 'imutils'],
     zip_safe=True,
