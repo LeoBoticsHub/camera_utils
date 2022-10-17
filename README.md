@@ -16,3 +16,7 @@ python3 -m pip install -e .
 ## ZED SDK installation
 
 To install ZED SDK follow the instructions in [ZED SDK installation](docs/zed_installation.md) Readme.
+
+## Helios SDK installation
+
+To install Helios SDK follow the instructions in [Helios SDK installation](docs/helios_installation.md) Readme.
