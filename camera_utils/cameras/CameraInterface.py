@@ -64,3 +64,6 @@ class Camera:
 
     def get_option(self, option):
         raise NotImplementedError
+
+    def get_pcd(self):
+        raise NotImplementedError
