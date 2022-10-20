@@ -200,7 +200,7 @@ def compute_box_pose_and_dimensions(rgb, depth, mask, intrinsics, cam2plane_dist
 
     # -------------PLANE SEGMENTATION TO REMOVE NOISY OUTLIERS----------------
 
-    try:  # TODO: evaluate to increase ransac_n and diminish num iterations
+    try: 
         plane_model, inliers = pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
     except Exception:
         print('\033[91mError during plane generation\033[0m')
