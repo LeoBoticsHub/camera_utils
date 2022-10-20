@@ -71,6 +71,7 @@ class Camera:
     def get_pcd(self, depth_truncation=5.0, display_pcd=False):
         '''
         :param depth_truncation: [m] only depth values smaller than this distance will be considered
+        :param display_pcd: [bool] if true display the pcd in a open3d plot window
         
         :return: open3d pcd 
         '''
