@@ -1,4 +1,5 @@
 from enum import Enum
+import open3d as o3d
 
 class Camera:
 
@@ -14,6 +15,8 @@ class Camera:
     depth_resolution = 0
     fps = 0
     serial_number = ""
+
+    o3d_intr = 0
 
     def __init__(self, rgb_resolution=Resolution.FullHD, depth_resolution=Resolution.HD, fps=30, serial_number=""):
         self.rgb_resolution = rgb_resolution
@@ -65,5 +68,17 @@ class Camera:
     def get_option(self, option):
         raise NotImplementedError
 
-    def get_pcd(self):
-        raise NotImplementedError
+    def get_pcd(self, depth_truncation=5.0):
+        '''
+        :param depth_truncation: [m] only depth values smaller than this distance will be considered
+        
+        :return: open3d pcd 
+        '''
+        rgb, depth = self.get_frames()
+
+        depth = o3d.geometry.Image(depth)
+        rgb = o3d.geometry.Image(rgb)
+        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb, depth, depth_trunc=depth_truncation, convert_rgb_to_intensity=False)
+        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, self.o3d_intr)
+
+        return pcd

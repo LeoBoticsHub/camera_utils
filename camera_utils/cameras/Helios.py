@@ -3,6 +3,7 @@ from camera_utils.cameras.CameraInterface import Camera
 from arena_api.system import system
 from arena_api.buffer import BufferFactory
 import cv2
+import open3d as o3d
 
 class Helios(Camera):
 
@@ -52,6 +53,9 @@ class Helios(Camera):
         self.serial_number = self.pipeline.nodemap["DeviceSerialNumber"].value
 
         self.intr = {'fx': intr["fx"], 'fy': intr["fy"], 'px': intr["ppx"], 'py': intr["ppy"], 'width': intr["width"], 'height': intr["height"]}
+
+        self.o3d_intr = o3d.camera.PinholeCameraIntrinsic()
+        self.o3d_intr.set_intrinsics(self.intr["width"], self.intr["height"], self.intr['fx'], self.intr['fy'], self.intr['px'], self.intr['py'])
 
         # if true makes black where the confidence is not high
         nodemap["Scan3dConfidenceThresholdEnable"].value = False 
@@ -143,21 +147,7 @@ class Helios(Camera):
         :return: rgb, depth images aligned with post-processing as numpy arrays
         '''
         return self.get_frames()
-        
-
-    # def get_pcd(self):
-    #     buffer = self.pipeline.get_buffer()
-    #     item = BufferFactory.copy(buffer)
-    #     self.pipeline.requeue_buffer(buffer)
-
-    #     npndarray = np.ctypeslib.as_array(item.pdata, shape=(item.height, item.width, int(item.bits_per_pixel / 8))).view(np.uint16)
-    #     npndarray[:,:,0] = npndarray[:,:,0] * self.scale_A + self.offset_A # x * scale + offset
-    #     npndarray[:,:,1] = npndarray[:,:,1] * self.scale_B + self.offset_B # y * scale + offset
-    #     npndarray[:,:,2] = npndarray[:,:,2] * self.scale_C + self.offset_C # z * scale + offset
-
-    #     npndarray = np.array(npndarray, dtype=np.uint16)
-
-    #     return npndarray[:,:,:3]
+    
 
     # def set_option(self, option, value):
     #     '''

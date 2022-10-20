@@ -1,6 +1,7 @@
 import numpy as np
 from camera_utils.cameras.CameraInterface import Camera
 import pyrealsense2 as rs
+import open3d as o3d
 
 class IntelRealsense(Camera):
 
@@ -34,6 +35,9 @@ class IntelRealsense(Camera):
         profile = cfg.get_stream(rs.stream.color)
         intr = profile.as_video_stream_profile().get_intrinsics()
         self.intr = {'fx': intr.fx, 'fy': intr.fy, 'px': intr.ppx, 'py': intr.ppy, 'width': intr.width, 'height': intr.height}
+        
+        self.o3d_intr = o3d.camera.PinholeCameraIntrinsic()
+        self.o3d_intr.set_intrinsics(self.intr["width"], self.intr["height"], self.intr['fx'], self.intr['fy'], self.intr['px'], self.intr['py'])
 
         if depth_in_meters:
             self.mm2m_conversion = 1000
@@ -102,6 +106,21 @@ class IntelRealsense(Camera):
         color_frame = np.asanyarray(color_frame_cam.get_data())
 
         return color_frame, np.asanyarray(depth_frame / self.mm2m_conversion, dtype=np.uint16)
+
+    def get_pcd(self, depth_truncation=5.0):
+        '''
+        :param depth_truncation: [m] only depth values smaller than this distance will be considered
+        
+        :return: open3d pcd 
+        '''
+        rgb, depth = self.get_frames()
+
+        depth = o3d.geometry.Image(depth)
+        rgb = o3d.geometry.Image(rgb)
+        rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb, depth, depth_trunc=depth_truncation)
+        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, self.o3d_intr)
+
+        return pcd
         
     def set_option(self, option, value):
         '''

@@ -1,5 +1,6 @@
 import numpy as np
 from camera_utils.cameras.CameraInterface import Camera
+import open3d as o3d
 
 try:
     import pyzed.sl as sl
@@ -58,15 +59,21 @@ class Zed(Camera):
                 'px': left_intr.cx, 'py': left_intr.cy, 
                 'width': left_intr.image_size.width, 'height': left_intr.image_size.height
             }
+            self.o3d_intr = o3d.camera.PinholeCameraIntrinsic()
+            self.o3d_intr.set_intrinsics(self.intr["width"], self.intr["height"], self.intr['fx'], self.intr['fy'], self.intr['px'], self.intr['py'])
         else:
             right_intr = zed_params.right_cam
-            self.intr = {'fx': [left_intr.fx, right_intr.fx],
-                         'fy': [left_intr.fy, right_intr.fy],
-                         'px': [left_intr.cx, right_intr.cx],
-                         'py': [left_intr.cy, right_intr.cy],
-                         'width': [left_intr.image_size.width, right_intr.image_size.width],
-                         'height': [left_intr.image_size.height, right_intr.image_size.height]
-                        }
+            self.intr = {
+                'fx': [left_intr.fx, right_intr.fx],
+                'fy': [left_intr.fy, right_intr.fy],
+                'px': [left_intr.cx, right_intr.cx],
+                'py': [left_intr.cy, right_intr.cy],
+                'width': [left_intr.image_size.width, right_intr.image_size.width],
+                'height': [left_intr.image_size.height, right_intr.image_size.height]
+            }
+            self.o3d_intr = o3d.camera.PinholeCameraIntrinsic()
+            self.o3d_intr.set_intrinsics(self.intr["width"][0], self.intr["height"][0], self.intr['fx'][0], self.intr['fy'][0], self.intr['px'][0], self.intr['py'][0])
+
 
         print("%s camera configured.\n" % self.camera_name)
 
