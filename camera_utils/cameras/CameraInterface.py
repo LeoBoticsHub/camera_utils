@@ -68,7 +68,7 @@ class Camera:
     def get_option(self, option):
         raise NotImplementedError
 
-    def get_pcd(self, depth_truncation=5.0):
+    def get_pcd(self, depth_truncation=5.0, display_pcd=False):
         '''
         :param depth_truncation: [m] only depth values smaller than this distance will be considered
         
@@ -80,5 +80,10 @@ class Camera:
         rgb = o3d.geometry.Image(rgb)
         rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(rgb, depth, depth_trunc=depth_truncation, convert_rgb_to_intensity=False)
         pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, self.o3d_intr)
+
+        if display_pcd:
+            pcd_display = o3d.geometry.PointCloud(pcd)
+            pcd_display.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
+            o3d.visualization.draw_geometries([pcd_display])
 
         return pcd
