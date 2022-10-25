@@ -53,3 +53,15 @@
   
     after this you can repeat the Python packages installation step
 
+3) in latest version, you may encounter the following error when installing the ZED SDK (i.e. while running ```./NAME_OF_FILE.run```):
+    ```
+    Verifying archive integrity...  100%   MD5 checksums are OK. All good. Uncompressing 'ZED camera SDK by Stereolabs (Use 'sudo apt install zstd' if zstd is not found)'./ZED_SDK_Ubuntu20_cuda11.7_v3.8.0.zstd.run: 1: eval: zstd: not found
+    ... Decompression failed
+    .... Extraction failed.
+    100%  Signal caught, cleaning up
+    ```
+    following the instructions, you should install zstd:
+    ```
+    sudo apt install zstd
+    ```
+    and then run again ./NAME_OF_FILE.run
