@@ -278,14 +278,14 @@ class Zed(Camera):
         runtime_parameters = sl.RuntimeParameters()
         if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             self.pipeline.retrieve_image(color_frame_left, sl.VIEW.LEFT)
-        color_frame_left = np.asanyarray(color_frame_left.get_data())[:, :, :3]
+        color_frame_left = np.array(color_frame_left.get_data())[:, :, :3]
         if self.single_camera_mode:
             return color_frame_left
         else:
             color_frame_right = sl.Mat()
             if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
                 self.pipeline.retrieve_image(color_frame_right, sl.VIEW.RIGHT)
-            color_frame_right = np.asanyarray(color_frame_right.get_data())[:, :, :3]
+            color_frame_right = np.array(color_frame_right.get_data())[:, :, :3]
             return color_frame_left, color_frame_right
 
     def get_depth(self):
@@ -296,7 +296,7 @@ class Zed(Camera):
         runtime_parameters = sl.RuntimeParameters()
         if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             self.pipeline.retrieve_measure(depth_frame, sl.MEASURE.DEPTH)
-        depth_frame = np.asanyarray(depth_frame.get_data())
+        depth_frame = np.array(depth_frame.get_data())
         depth_frame = np.nan_to_num(depth_frame)
         return depth_frame
 
@@ -310,16 +310,16 @@ class Zed(Camera):
         if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             self.pipeline.retrieve_image(color_frame_left, sl.VIEW.LEFT)
             self.pipeline.retrieve_measure(depth_frame, sl.MEASURE.DEPTH)
-        depth_frame = np.asanyarray(depth_frame.get_data())
+        depth_frame = np.array(depth_frame.get_data())
         depth_frame = np.nan_to_num(depth_frame)
-        color_frame_left = np.asanyarray(color_frame_left.get_data())[:, :, :3]
+        color_frame_left = np.array(color_frame_left.get_data())[:, :, :3]
         if self.single_camera_mode:
             return color_frame_left, depth_frame
         else:
             color_frame_right = sl.Mat()
             if self.pipeline.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
                 self.pipeline.retrieve_image(color_frame_right, sl.VIEW.RIGHT)
-            color_frame_right = np.asanyarray(color_frame_right.get_data())[:, :, :3]
+            color_frame_right = np.array(color_frame_right.get_data())[:, :, :3]
             return [color_frame_left, color_frame_right], depth_frame
 
     def get_aligned_frames(self):
