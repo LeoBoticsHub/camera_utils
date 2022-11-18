@@ -3,11 +3,6 @@
 ## download arena sdk for linux and arena_api for python from:
 https://thinklucid.com/downloads-hub/
 
-credentials:
-```
-user:  andrea.zunino@iit.it
-psswd: Genova1234
-```
 ## install Arena SDK for linux:
 follow Readme instructions in the arena sdk directory. They should be similar to:
 ```
