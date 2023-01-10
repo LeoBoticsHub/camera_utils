@@ -18,13 +18,20 @@ class IntelRealsense(Camera):
         if self.serial_number != "":
             config.enable_device(self.serial_number)
 
-        # set resolutions
-        config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, self.fps)  # max 1280x720 at 90 fps        
+        # set RGB resolutions
         if self.rgb_resolution == Camera.Resolution.HD: # max 1920x1080 at 30 fps
             config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, self.fps)  # max 1920x1080 at 30 fps
+        elif self.rgb_resolution == Camera.Resolution.LOW:
+            config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, self.fps)  # max 1920x1080 at 30 fps
         else:
             config.enable_stream(rs.stream.color, 1920, 1080, rs.format.bgr8, self.fps)  # max 1920x1080 at 30 fps
-        
+
+        # set Depth resolutions
+        if self.depth_resolution == Camera.Resolution.LOW:
+            config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, self.fps)  # max 1280x720 at 90 fps        
+        else:
+            config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, self.fps)  # max 1280x720 at 90 fps        
+
         # Start streaming
         try:
             cfg = self.pipeline.start(config)

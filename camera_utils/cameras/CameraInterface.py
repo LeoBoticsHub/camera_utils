@@ -7,6 +7,7 @@ class Camera:
         HD = 0
         FullHD = 1
         QHD = 2
+        LOW = 3
 
     camera_name = ""
     intr = []
