@@ -11,17 +11,18 @@ except ImportError:
 
 class Zed(Camera):
 
-    def __init__(self, single_camera_mode=True, rgb_resolution=Camera.Resolution.FullHD,
-                 depth_resolution=Camera.Resolution.FullHD, fps=30, serial_number=""):
+    def __init__(
+        self, single_camera_mode=True, camera_resolution=Camera.Resolution.FullHD,
+        fps=30, serial_number=""):
         '''
         :param single_camera_mode: boolean to choose if using the camera as a single camera or a dual camera (two images ...)
-        :param rgb_resolution: the rgb resolution of the camera (e.g., Zed.Resolution.HD)
+        :param camera_resolution: the rgb resolution of the camera (e.g., Zed.Resolution.HD)
         :param depth_resolution: the depth resolution of the camera (e.g., Zed.Resolution.HD)
         :param fps: the camera frames per second
         :param serial_number: the camera serial number
         '''
         self.camera_name = "ZED"
-        Camera.__init__(self, rgb_resolution, depth_resolution, fps, serial_number)
+        Camera.__init__(self, camera_resolution, fps, serial_number)
 
         self.single_camera_mode = single_camera_mode
         self.pipeline = sl.Camera()
@@ -31,15 +32,20 @@ class Zed(Camera):
         if self.serial_number != "":
             init_params.set_from_serial_number(self.serial_number)
 
-        # set resolution
-        if self.rgb_resolution == Camera.Resolution.QHD:
+        # set camera resolution
+        if self.camera_resolution == Camera.Resolution.LOW:
+            init_params.camera_resolution = sl.RESOLUTION.VGA
+        elif self.camera_resolution == Camera.Resolution.HD:
+            init_params.camera_resolution = sl.RESOLUTION.HD720
+        elif self.camera_resolution == Camera.Resolution.FullHD:
+            init_params.camera_resolution = sl.RESOLUTION.HD1080
+        elif self.camera_resolution == Camera.Resolution.QHD:
             init_params.camera_resolution = sl.RESOLUTION.HD2K
             if self.fps > 15:
                 self.fps = 15
-        elif self.rgb_resolution == Camera.Resolution.HD:
-            init_params.camera_resolution = sl.RESOLUTION.HD720
         else:
-            init_params.camera_resolution = sl.RESOLUTION.HD1080
+            print("\033[91mERROR: Wrong resolution set for camera. Choose between LOW, HD, FullHD, QHD.\033[0m")
+            exit()
 
         init_params.camera_fps = self.fps
 

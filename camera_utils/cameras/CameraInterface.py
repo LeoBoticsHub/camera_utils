@@ -12,18 +12,17 @@ class Camera:
     camera_name = ""
     intr = []
     pipeline = 0
-    rgb_resolution = 0
-    depth_resolution = 0
+    camera_resolution = 0
     fps = 0
     serial_number = ""
 
     o3d_intr = 0
 
-    def __init__(self, rgb_resolution=Resolution.FullHD, depth_resolution=Resolution.HD, fps=30, serial_number=""):
-        self.rgb_resolution = rgb_resolution
-        self.depth_resolution = depth_resolution
+    def __init__(self, camera_resolution=Resolution.HD,  fps=30, serial_number=""):
+        self.camera_resolution = camera_resolution
         self.fps = fps
         self.serial_number = serial_number
+        
 
         print("%s initialization" % self.camera_name)
 

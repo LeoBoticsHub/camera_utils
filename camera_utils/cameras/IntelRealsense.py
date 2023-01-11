@@ -5,11 +5,11 @@ import open3d as o3d
 
 class IntelRealsense(Camera):
 
-    def __init__(self, rgb_resolution=Camera.Resolution.HD, depth_resolution=Camera.Resolution.HD, fps=30,
+    def __init__(self, camera_resolution=Camera.Resolution.HD, fps=30,
                  serial_number="", depth_in_meters=False):
 
         self.camera_name = "Intel Realsense"
-        Camera.__init__(self, rgb_resolution, depth_resolution, fps, serial_number)
+        Camera.__init__(self, camera_resolution,  fps, serial_number)
 
         # start camera
         self.pipeline = rs.pipeline()
@@ -18,19 +18,26 @@ class IntelRealsense(Camera):
         if self.serial_number != "":
             config.enable_device(self.serial_number)
 
-        # set RGB resolutions
-        if self.rgb_resolution == Camera.Resolution.HD: # max 1920x1080 at 30 fps
-            config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, self.fps)  # max 1920x1080 at 30 fps
-        elif self.rgb_resolution == Camera.Resolution.LOW:
-            config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, self.fps)  # max 1920x1080 at 30 fps
+        # set resolutions
+        # RGB max 1920x1080 at 30 fps
+        # DEPTH max 1280x720 at 90 fps
+        if self.camera_resolution == Camera.Resolution.LOW:
+            config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, self.fps) 
+            config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, self.fps)     
+        elif self.camera_resolution == Camera.Resolution.HD:
+            config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, self.fps)  
+            config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, self.fps)         
+        elif self.camera_resolution == Camera.Resolution.FullHD:
+            config.enable_stream(rs.stream.color, 1920, 1080, rs.format.bgr8, self.fps)  
+            config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, self.fps)     
+            print(
+                "\033[93mWARNING! RGB resolution is set to FullHD while Depth is set to HD."
+                "\nIf you want equal resoultions you need to set camera_resolution to HD or LOW.\033[0m"
+            ) 
         else:
-            config.enable_stream(rs.stream.color, 1920, 1080, rs.format.bgr8, self.fps)  # max 1920x1080 at 30 fps
+            print("\033[91mERROR: Wrong resolution set for camera. Choose between LOW, HD, FullHD.\033[0m")
+            exit()   
 
-        # set Depth resolutions
-        if self.depth_resolution == Camera.Resolution.LOW:
-            config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, self.fps)  # max 1280x720 at 90 fps        
-        else:
-            config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, self.fps)  # max 1280x720 at 90 fps        
 
         # Start streaming
         try:

@@ -7,13 +7,13 @@ import open3d as o3d
 
 class Helios(Camera):
 
-    def __init__(self, rgb_resolution=Camera.Resolution.HD, depth_resolution=Camera.Resolution.HD, fps=30,
+    def __init__(self, camera_resolution=Camera.Resolution.HD, fps=30,
                  serial_number="", depth_in_meters=False):
 
         import time
 
         self.camera_name = "LucidVision Helios"
-        Camera.__init__(self, rgb_resolution, depth_resolution, fps, serial_number)
+        Camera.__init__(self, camera_resolution, fps, serial_number)
 
         tries = 0
         tries_max = 6
