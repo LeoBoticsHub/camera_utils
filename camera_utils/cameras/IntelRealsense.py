@@ -46,6 +46,12 @@ class IntelRealsense(Camera):
             print("\n\033[1;31;40mError during camera initialization.\nMake sure to have set the right RGB camera resolution. Some cameras doesn't have FullHD resolution (e.g. Intel Realsense D455).\nIf you have connected more cameras make sure to insert the serial numbers to distinguish cameras during initialization.\033[0m\n")
             exit(1)
 
+        # setting camera name from camera info
+        name_profile = config.resolve(self.pipeline)
+        device = name_profile.get_device()
+        self.camera_name = device.get_info(rs.camera_info.name)
+        self.serial_number = device.get_info(rs.camera_info.serial_number)
+
         profile = cfg.get_stream(rs.stream.color)
         intr = profile.as_video_stream_profile().get_intrinsics()
         self.intr = {'fx': intr.fx, 'fy': intr.fy, 'px': intr.ppx, 'py': intr.ppy, 'width': intr.width, 'height': intr.height}
@@ -58,12 +64,12 @@ class IntelRealsense(Camera):
         else:
             self.mm2m_conversion = 1
 
-        print("%s %s camera configured.\n" % (self.camera_name, self.serial_number))
+        print("%s (S/N: %s) camera configured.\n" % (self.camera_name, self.serial_number))
 
     def __del__(self):
         try:
             self.pipeline.stop()
-            print("%s %s camera closed" % (self.camera_name, self.serial_number))
+            print("%s (S/N: %s) camera closed" % (self.camera_name, self.serial_number))
         except RuntimeError as ex:
             print("\033[0;33;40mException (%s): %s\033[0m" % (type(ex).__name__, ex))
         
