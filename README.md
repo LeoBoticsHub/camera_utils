@@ -1,6 +1,6 @@
 # camera_utils
 
-This package aim to collect and simplify some computer vision operations, especially the camera hardware use.
+This package cointains some computer vision operations, especially the camera hardware use.
 
 <!-- TABLE OF CONTENTS -->
 <!-- <details> -->
