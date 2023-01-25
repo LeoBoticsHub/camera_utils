@@ -8,8 +8,8 @@ class IntelRealsense(Camera):
     def __init__(self, camera_resolution=Camera.Resolution.HD, fps=30,
                  serial_number="", depth_in_meters=False):
 
-        self.camera_name = "Intel Realsense"
-        Camera.__init__(self, camera_resolution,  fps, serial_number)
+        self.camera_brand = "Intel Realsense"
+        Camera.__init__(self, camera_resolution, fps, serial_number)
 
         # start camera
         self.pipeline = rs.pipeline()

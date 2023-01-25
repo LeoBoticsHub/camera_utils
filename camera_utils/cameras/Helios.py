@@ -12,9 +12,11 @@ class Helios(Camera):
 
         import time
 
-        self.camera_name = "LucidVision Helios"
+        self.camera_brand = "LucidVision Helios"
         Camera.__init__(self, camera_resolution, fps, serial_number)
 
+        self.camera_name = "LucidVision Helios"
+        
         tries = 0
         tries_max = 6
         sleep_time_secs = 3

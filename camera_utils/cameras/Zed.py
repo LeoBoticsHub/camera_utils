@@ -21,7 +21,7 @@ class Zed(Camera):
         :param fps: the camera frames per second
         :param serial_number: the camera serial number
         '''
-        self.camera_name = "ZED"
+        self.camera_brand = "ZED"
         Camera.__init__(self, camera_resolution, fps, serial_number)
 
         self.single_camera_mode = single_camera_mode

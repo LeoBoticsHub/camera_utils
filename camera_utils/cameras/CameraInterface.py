@@ -10,6 +10,7 @@ class Camera:
         LOW = 3
 
     camera_name = ""
+    camera_brand = ""
     intr = []
     pipeline = 0
     camera_resolution = 0
@@ -24,7 +25,7 @@ class Camera:
         self.serial_number = serial_number
         
 
-        print("%s initialization" % self.camera_name)
+        print("%s initialization" % self.camera_brand)
 
     def get_intrinsics(self):
         '''
@@ -37,6 +38,12 @@ class Camera:
         :return: camera name
         '''
         return self.camera_name
+
+    def get_brand(self):
+        '''
+        :return: camera camera_brand
+        '''
+        return self.camera_brand
 
     def get_serial_number(self):
         '''
