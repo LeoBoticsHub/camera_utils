@@ -58,6 +58,11 @@ class Zed(Camera):
         # get intrinsics
         zed_params = self.pipeline.get_camera_information().calibration_parameters
         left_intr = zed_params.left_cam
+        
+        # set camera name and serial number
+        self.camera_name = self.pipeline.get_camera_information().camera_model
+        self.serial_number = self.pipeline.get_camera_information().serial_number
+
 
         if self.single_camera_mode:
             self.intr = {
@@ -81,11 +86,11 @@ class Zed(Camera):
             self.o3d_intr.set_intrinsics(self.intr["width"][0], self.intr["height"][0], self.intr['fx'][0], self.intr['fy'][0], self.intr['px'][0], self.intr['py'][0])
 
 
-        print("%s camera configured.\n" % self.camera_name)
+        print("%s (S/N: %s) camera configured.\n" % (self.camera_name, self.serial_number))
 
     def __del__(self):
         self.pipeline.close()
-        print("%s camera closed" % self.camera_name)
+        print("%s (S/N: %s) camera closed" % (self.camera_name, self.serial_number))
 
     def get_rgb(self):
         '''
