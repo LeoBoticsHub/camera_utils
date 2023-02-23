@@ -20,7 +20,6 @@
 #
 # You should have received a copy of the GNU General Public License. If not, see http://www.gnu.org/licenses/
 ---------------------------------------------------------------------------------------------------------------------------------'''
-import time
 from camera_wrapper_node import IntelRosWrapper
 import select
 import sys

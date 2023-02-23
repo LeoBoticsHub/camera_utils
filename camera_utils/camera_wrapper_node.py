@@ -20,7 +20,7 @@
 #
 # You should have received a copy of the GNU General Public License. If not, see http://www.gnu.org/licenses/
 ---------------------------------------------------------------------------------------------------------------------------------'''
-from camera_init import IntelRealsense
+from cameras.IntelRealsense import IntelRealsense
 import rospy
 from sensor_msgs.msg import Image, CameraInfo
 from cv_bridge import CvBridge
@@ -35,15 +35,14 @@ class IntelRosWrapper(IntelRealsense):
 
     def __init__(self, rgb_topic="rgb_image_raw", 
                  depth_topic="depth_image_raw", 
-                 camera_info_topic="camera_info", rgb_resolution=Resolution.HD,
-                 depth_resolution=Resolution.HD,
+                 camera_info_topic="camera_info", camera_resolution=Resolution.HD,
                  fps=30, serial_number="", depth_in_meters=False):
 
         self.rgb_publisher = rospy.Publisher(rgb_topic, Image, queue_size=5)
         self.depth_publisher = rospy.Publisher(depth_topic, Image, queue_size=5)
         self.camera_info_publisher = rospy.Publisher(camera_info_topic, CameraInfo, queue_size=5)
 
-        IntelRealsense.__init__(self, rgb_resolution, depth_resolution, fps, serial_number, depth_in_meters)
+        IntelRealsense.__init__(self, camera_resolution, fps, serial_number, depth_in_meters)
         rospy.init_node("intel_ros_wrapper")
 
 
@@ -99,6 +98,8 @@ class IntelRosWrapper(IntelRealsense):
         camera_info.K[4] = intr['fy']
         camera_info.K[2] = intr['px']
         camera_info.K[5] = intr['py']
+        camera_info.width = intr['width']
+        camera_info.height = intr['height']
 
         self.camera_info_publisher.publish(camera_info)
 
