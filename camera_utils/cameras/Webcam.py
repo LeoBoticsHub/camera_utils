@@ -29,10 +29,22 @@ class Webcam(Camera):
 
     def __init__(self, device_idx = 0):
 
-        self.camera_brand = "Webcam"
+        self.camera_brand = "Computer Webcam"
+        self.camera_name = "Webcam"
+
         self.camera = cv2.VideoCapture(device_idx)
 
+        if not self.camera.isOpened():
+            print("Cannot open Webcam camera")
+            exit()
+
         Camera.__init__(self)
+
+        width  = self.camera.get(cv2.CAP_PROP_FRAME_WIDTH) 
+        height = self.camera.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+        self.intr = {'width': width, 'height': height}
+
 
 
     def __del__(self):
