@@ -45,6 +45,9 @@ class Webcam(Camera):
 
         self.intr = {'width': width, 'height': height}
 
+        print("%s initialized" % self.camera_brand)
+
+
 
 
     def __del__(self):
