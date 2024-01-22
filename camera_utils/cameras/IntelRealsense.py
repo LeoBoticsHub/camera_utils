@@ -166,26 +166,27 @@ class IntelRealsense(Camera):
         
     def set_option(self, option, value):
         '''
-        :param option: the option to be set (rs.option.OPTION_NAME)
+        :param option: the option to be set (rs.option.OPTION) (str)
         :param value: the value of the option
         '''
-        option_name = str(option)
+        option = eval("rs.option." + option)
         try:
             sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1]
             sensor.set_option(option, value)
             option_name = str(option).replace('option.', '').upper()
             print("Option %s changed to value: %d" % (option_name, int(value)))
         except TypeError as ex:
-            print("\033[0;33;40m Exception (%s): the option %s has NOT been set." % (type(ex).__name__, option_name))
+            print("\033[0;33;40m Exception (%s): the option %s has NOT been set.\033[0;33;0m" % (type(ex).__name__, option_name))
 
     def get_option(self, option):
         '''
-        :param option: the option to be got (rs.option.OPTION_NAME)
+        :param option: the option to be got (rs.option.OPTION) (str)
         '''
-        option_name = str(option).replace('option.', '').upper()
+        option_name = str(option).upper()
+        option = eval("rs.option." + option)
         try:
             sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1]
             value = sensor.get_option(option)
             print("Option %s value: %d" % (option_name, int(value)))
         except TypeError as ex:
-            print("\033[1;33;40m Exception (%s): the option %s has NOT been set." % (type(ex).__name__, option_name))
+            print("\033[1;33;40m Exception (%s): the option %s has NOT been set.\033[0;33;0m" % (type(ex).__name__, option_name))
