@@ -128,7 +128,7 @@ class IntelRealsense(Camera):
             frames = self.pipeline.wait_for_frames()
             depth_frame_cam = frames.get_depth_frame()
             color_frame_cam = frames.get_color_frame()
-        depth_frame = np.asanyarray(depth_frame_cam.get_data()) / self.mm2m_conversion
+        depth_frame = np.asanyarray(depth_frame_cam.get_data())
         color_frame = np.asanyarray(color_frame_cam.get_data())
 
         return color_frame, np.asanyarray(depth_frame / self.mm2m_conversion, dtype=np.uint16)
