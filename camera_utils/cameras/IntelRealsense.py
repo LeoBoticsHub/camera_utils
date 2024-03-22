@@ -164,20 +164,27 @@ class IntelRealsense(Camera):
 
         return pcd
         
-    def set_option(self, option, value):
+    def set_option(self, option, value, device = 1):
         '''
         :param option: the option to be set (rs.option.OPTION) (str)
         :param value: the value of the option
+        :param device: default=1 (RGB) the value of the device to set option (0: depth, 1: rgb)
         '''
-        option = eval("rs.option." + option)
         try:
-            sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1]
-            sensor.set_option(option, value)
+            option = eval("rs.option." + option)
+        except AttributeError as ex:
+            print("\033[0;33;40m Exception (%s): the option %s does NOT exists.\033[0;33;0m" % (type(ex).__name__, option))
+            return 
+        try:
             option_name = str(option).replace('option.', '').upper()
-            print("Option %s changed to value: %d" % (option_name, int(value)))
+            sensor = self.pipeline.get_active_profile().get_device().query_sensors()[device]
+            sensor.set_option(option, value)
+            print("Option %s for sensor %s has changed to value: %d" % (option_name, sensor.name, int(value)))
         except TypeError as ex:
             print("\033[0;33;40m Exception (%s): the option %s has NOT been set.\033[0;33;0m" % (type(ex).__name__, option_name))
-
+        except IndexError as ex:
+            print("\033[0;33;40m Exception (%s): the option %s has NOT been set because device ID %d does not exists.\033[0;33;0m" % (type(ex).__name__, option_name, device))
+            
     def get_option(self, option):
         '''
         :param option: the option to be got (rs.option.OPTION) (str)
